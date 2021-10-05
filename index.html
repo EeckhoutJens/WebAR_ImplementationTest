@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebAR testCase</title>
+    <link type = "text/css" rel="stylesheet" href="Main.css"/>
+
+    <!-- three.js -->
+    <script src="https://unpkg.com/three@0.126.0/build/three.js"></script>
+    <script src="https://unpkg.com/three@0.126.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="Core.js"></script>
+</head>
+<body>
+<div id="content">
+    <div id="mySidenav" class="sidenav">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <a href="javascript:void(0)" onclick="openSub1()">Ceiling Trims
+            <div id="sub-menu-1" class="submenu">
+                <a class ="ar-object" id="C341" href="#" onclick="LoadModel(this.id)">C341</a>
+                <a class ="ar-object" id="C391" href="#" onclick="LoadModel(this.id)">C391</a>
+                <a class ="ar-object" id="C393" href="#" onclick="LoadModel(this.id)">C393</a>
+            </div>
+        </a>
+        <a href="javascript:void(0)" onclick="openSub2()">Floor Trims
+            <div id="sub-menu-2" class="submenu">
+                <a class ="ar-object" id="SX118" href="#" onclick="LoadModel(this.id)">SX118</a>
+                <a class ="ar-object" id="SX157" href="#" onclick="LoadModel(this.id)">SX157</a>
+                <a class ="ar-object" id="SX181" href="#" onclick="LoadModel(this.id)">SX181</a>
+            </div>
+        </a>
+        <a href="javascript:void(0)" onclick="openSub3()">Wall Trims
+            <div id="sub-menu-3" class="submenu">
+                <a class ="ar-object" id="P4020" href="#" onclick="LoadModel(this.id)">P4020</a>
+                <a class ="ar-object" id="P8020" href="#" onclick="LoadModel(this.id)">P8020</a>
+            </div>
+        </a>
+        <a href="javascript:void(0)" onclick="openSub4()">Decorations
+            <div id="sub-menu-4" class="submenu">
+                <a class ="ar-object" id="W100" href="#" onclick="LoadModel(this.id)">W100</a>
+                <a class ="ar-object" id="W105" href="#" onclick="LoadModel(this.id)">W105</a>
+                <a class ="ar-object" id="W106" href="#" onclick="LoadModel(this.id)">W106</a>
+            </div>
+        </a>
+    </div>
+
+    <span id="OpenButton" style="font-size:30px;cursor:pointer; display: none" onclick="openNav()">&#9776; open</span>
+</div>
+
+
+<div id="Start AR">
+    <!-- Starting an immersive WebXR session requires user interaction. Start the WebXR experience with a simple button. -->
+    <a id="enter-ar" class="place-button">
+        Start
+    </a>
+</div>
+
+
+</body>
+</html>
