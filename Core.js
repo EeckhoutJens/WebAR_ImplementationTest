@@ -1,6 +1,10 @@
 window.gltfLoader = new THREE.GLTFLoader();
-
 //General UI functions
+function SetModelID(id)
+{
+    ModelID = id;
+}
+
 function openNav() {
     document.getElementById("mySidenav").style.width = "250px";
 }
@@ -79,17 +83,20 @@ let IsDeterminingHeight = true;
 let Height = 0;
 //Allows to make sure all the dots are placed on the same Y position
 let ConstrainedYPos = 0;
-const MinDistance = 1;
-let NrOfPlanes = 0;
 
 //Second step, place points in the top corners of adjacent wall
 let PlacingPoints = false;
+const MinDistance = 1;
+let NrOfPlanes = 0;
 
 //Third step, if a placed point is close enough to a previous point close of and move to next step
 let FinishedPlacingPlanes = false;
 //-------------------------------------------------------------------------------------------------
 
-let ModelToSpawn;
+let ModelID;
+let SpawnedModel;
+
+let pmremGenerator;
 
 //Container class to handle WebXR logic
 //Adapted from the AR with WebXR workshop project by Google
@@ -264,7 +271,6 @@ class App {
         scene.add(directionalLight);
 
         this.scene = scene;
-
         this.reticle = new Reticle();
         //this.reticle.rotateX(0.5 * Math.PI);
         this.scene.add(this.reticle);
@@ -274,6 +280,9 @@ class App {
          * to handle the matrices independently. */
         this.camera = new THREE.PerspectiveCamera();
         this.camera.matrixAutoUpdate = false;
+
+        pmremGenerator = new THREE.PMREMGenerator(this.renderer);
+        pmremGenerator.compileEquirectangularShader();
     }
 
     /** Place a point when the screen is tapped.
@@ -282,7 +291,8 @@ class App {
     {
         if (FinishedPlacingPlanes)
         {
-
+            if (ModelID != null)
+                this.LoadModel(this.reticle.position, this.scene);
         }
 
         if (PlacingPoints)
@@ -370,8 +380,17 @@ class App {
     {
         for(let i = 0; i < Planes.length; ++i)
         {
-            const linePoints = Planes[i];
-            linePoints.push(linePoints[0]);
+            var Points = Planes[i];
+            var linePoints = [];
+            for(let j = 0; j < Points.length; ++j)
+            {
+                let point = new THREE.Vector3(0,0,0);
+                point.copy(Points[i]);
+                linePoints.push(point);
+            }
+            let closePoint = new THREE.Vector3(0,0,0);
+            closePoint.copy(Points[0]);
+            linePoints.push(closePoint);
             const material = new THREE.LineBasicMaterial({color: 0x0000ff});
             const geometry = new THREE.BufferGeometry().setFromPoints(Planes[i]);
             const line = new THREE.Line(geometry,material);
@@ -379,6 +398,83 @@ class App {
         }
     }
 
+    LoadModel(position, scene)
+    {
+        if (!this.IsInPlane(position))
+            return;
+        if (SpawnedModel != null)
+        {
+            this.scene.remove(SpawnedModel);
+        }
+        new THREE.RGBELoader()
+            .setDataType(THREE.UnsignedByteType)
+            .setPath('Textures/')
+            .load('photo_studio_01_1k.hdr', function (texture)
+            {
+                var envmap = pmremGenerator.fromEquirectangular(texture).texture;
+                scene.environment = envmap;
+                texture.dispose();
+                pmremGenerator.dispose();
+
+                window.gltfLoader.setPath('3D/');
+                window.gltfLoader.load(ModelID + ".gltf", function(gltf)
+                {
+                    SpawnedModel = gltf.scene;
+                    SpawnedModel.position.copy(position);
+                    scene.add(SpawnedModel);
+                })
+            });
+    }
+
+    IsInPlane(position)
+    {
+        var inside = false;
+        var highest = new THREE.Vector3(0,0,0);
+        var lowest = new THREE.Vector3(0,0,0);
+        for(var currentPlaneId = 0; currentPlaneId < Planes.length;++currentPlaneId)
+        {
+            var currentPoints = Planes[currentPlaneId];
+            for(var i = 0; i < currentPoints.length; ++i)
+            {
+                if (i === 0)
+                {
+                    highest.copy( currentPoints[i].position);
+                    lowest.copy( currentPoints[i].position);
+                }
+
+                //Calculate boundaries
+                if (highest.x < currentPoints[i].position.x)
+                    highest.x = currentPoints[i].position.x;
+
+                if (highest.y < currentPoints[i].position.y)
+                    highest.y = currentPoints[i].position.y;
+
+                if (highest.z < currentPoints[i].position.z)
+                    highest.z = currentPoints[i].position.z;
+
+                if (lowest.x > currentPoints[i].position.x)
+                    lowest.x = currentPoints[i].position.x;
+
+                if (lowest.y > currentPoints[i].position.y)
+                    lowest.y = currentPoints[i].position.y;
+
+                if (lowest.z > currentPoints[i].position.z)
+                    lowest.z = currentPoints[i].position.z;
+
+                //Check if given position is within boundary
+                if (position.x <= highest.x && position.x >= lowest.x
+                && position.y <= highest.y && position.y >= lowest.y
+                    &&position.z <= highest.z && position.z >= lowest.z)
+                {
+                    inside = true;
+                    break;
+                }
+
+            }
+        }
+
+        return inside;
+    }
     stylizeElement( element ) {
 
         element.style.position = 'absolute';
