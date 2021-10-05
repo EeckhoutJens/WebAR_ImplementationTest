@@ -370,6 +370,8 @@ class App {
     {
         for(let i = 0; i < Planes.length; ++i)
         {
+            const linePoints = Planes[i];
+            linePoints.push(linePoints[0]);
             const material = new THREE.LineBasicMaterial({color: 0x0000ff});
             const geometry = new THREE.BufferGeometry().setFromPoints(Planes[i]);
             const line = new THREE.Line(geometry,material);
