@@ -1,8 +1,16 @@
 window.gltfLoader = new THREE.GLTFLoader();
 //General UI functions
-function SetModelID(id)
+function SetModelID(id, type)
 {
     ModelID = id;
+    if (type === "ceilingTrim")
+        decoType = DecorationTypes.CeilingTrim;
+    if (type === "floorTrim")
+        decoType = DecorationTypes.FloorTrim;
+    if (type === "wallTrim")
+        decoType = DecorationTypes.WallTrim;
+    if (type === "decoration")
+        decoType = DecorationTypes.Decoration;
 }
 
 function openNav() {
@@ -76,6 +84,15 @@ class Reticle extends THREE.Object3D {
 //Global variables (Should try to get rid of these)
 const Points = [];
 const Planes = [];
+const DecorationTypes =
+    {
+        CeilingTrim: "ceilingTrim",
+        FloorTrim: "floorTrim",
+        WallTrim: "wallTrim",
+        Decoration: "decoration",
+    }
+
+    let decoType = DecorationTypes.Decoration;
 
 //PLANE DETECTION
 //First step, place 2 points to determine the height of the walls
@@ -426,7 +443,21 @@ class App {
                             SpawnedModel.rotateY(-Math.PI / 2)
 
                     }
-                    SpawnedModel.position.copy(position);
+                    switch (decoType)
+                    {
+                        case DecorationTypes.Decoration:
+                            SpawnedModel.position.copy(position);
+                            break;
+
+                        case DecorationTypes.CeilingTrim:
+                            break;
+
+                        case DecorationTypes.FloorTrim:
+                            break;
+
+                        case DecorationTypes.WallTrim:
+                            break;
+                    }
                     scene.add(SpawnedModel);
                     const shadowMesh = scene.children.find(c => c.name === 'shadowMesh');
                     shadowMesh.position.y = SpawnedModel.position.y
