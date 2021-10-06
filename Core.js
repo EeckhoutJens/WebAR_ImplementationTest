@@ -95,8 +95,8 @@ let FinishedPlacingPlanes = false;
 
 let ModelID;
 let SpawnedModel;
-let PlaneToSpawnIn;
-
+let HitPlaneDirection;
+let IsDirectionX = false;
 let pmremGenerator;
 
 //Container class to handle WebXR logic
@@ -402,12 +402,6 @@ class App {
         {
             this.scene.remove(SpawnedModel);
         }
-        let direction = this.CalculatePlaneDirection();
-        let absDirection = new THREE.Vector3(0,0,0);
-        absDirection.copy(direction);
-        absDirection.x = Math.abs(absDirection.x);
-        absDirection.y = Math.abs(absDirection.y);
-        absDirection.z = Math.abs(absDirection.z);
         new THREE.RGBELoader()
             .setDataType(THREE.UnsignedByteType)
             .setPath('Textures/')
@@ -419,16 +413,16 @@ class App {
                 window.gltfLoader.setPath('3D/');
                 window.gltfLoader.load(ModelID + ".gltf", function (gltf) {
                     SpawnedModel = gltf.scene;
-                    if (absDirection.x > absDirection.z)
+                    if (IsDirectionX)
                     {
-                        if (direction.x < 0)
+                        if (HitPlaneDirection.x < 0)
                             SpawnedModel.rotateY(Math.PI);
                     }
                     else
                     {
-                        if (direction.z  < 0)
+                        if (HitPlaneDirection.z  < 0)
                             SpawnedModel.rotateY(-Math.PI / 2)
-                        if (direction.z  > 0)
+                        if (HitPlaneDirection.z  > 0)
                             SpawnedModel.rotateY(Math.PI / 2)
 
                     }
@@ -471,23 +465,51 @@ class App {
                 if (lowest.z > currentPoints[i].z)
                     lowest.z = currentPoints[i].z;
             }
+
+            //Calculate Right direction of plane
+            let direction = this.CalculatePlaneDirection(currentPoints);
+            let absDirection = new THREE.Vector3(0,0,0);
+            absDirection.copy(direction);
+            absDirection.x = Math.abs(absDirection.x);
+            absDirection.y = Math.abs(absDirection.y);
+            absDirection.z = Math.abs(absDirection.z);
+            if (absDirection.x > absDirection.z)
+                IsDirectionX = true;
+            else
+                IsDirectionX = false
+
+
             //Check if given position is within boundary
-            if (position.x <= highest.x && position.x >= lowest.x
-                &&position.y <= highest.y && position.y >= lowest.y)
+            if (IsDirectionX)
             {
-                inside = true;
-                PlaneToSpawnIn = Planes[currentPlaneId];
+                if (position.x <= highest.x && position.x >= lowest.x
+                    &&position.y <= highest.y && position.y >= lowest.y)
+                {
+                    inside = true;
+                    HitPlaneDirection = direction;
+                    HitPlaneDirection = Planes[currentPlaneId];
+                }
             }
+            else
+            {
+                if (position.z <= highest.z && position.z >= lowest.z
+                    &&position.y <= highest.y && position.y >= lowest.y)
+                {
+                    inside = true;
+                    HitPlaneDirection = Planes[currentPlaneId];
+                }
+            }
+
         }
 
         return inside;
     }
 
-    CalculatePlaneDirection()
+    CalculatePlaneDirection(plane)
     {
         let direction = new THREE.Vector3(0,0,0);
-        direction.copy(PlaneToSpawnIn[2]);
-        direction.sub(PlaneToSpawnIn[1]);
+        direction.copy(plane[2]);
+        direction.sub(plane[1]);
 
         return direction;
     }
