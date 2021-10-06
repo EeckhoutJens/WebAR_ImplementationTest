@@ -501,7 +501,7 @@ class App {
         button.style.cursor = 'pointer';
         button.style.left = 'calc(50% - 50px)';
         button.style.width = '100px';
-        button.textContent = 'NEXT';
+        button.textContent = 'Place';
         this.stylizeElement(button);
 
         button.onmouseenter = function () {
@@ -518,7 +518,7 @@ class App {
 
         button.onclick = function ()
         {
-            this.PlaceClicked();
+            app.PlaceClicked();
         }
 
         document.body.appendChild(button);
