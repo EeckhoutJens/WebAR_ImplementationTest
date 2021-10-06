@@ -421,9 +421,9 @@ class App {
                     else
                     {
                         if (HitPlaneDirection.z  < 0)
-                            SpawnedModel.rotateY(-Math.PI / 2)
-                        if (HitPlaneDirection.z  > 0)
                             SpawnedModel.rotateY(Math.PI / 2)
+                        if (HitPlaneDirection.z  > 0)
+                            SpawnedModel.rotateY(-Math.PI / 2)
 
                     }
                     SpawnedModel.position.copy(position);
@@ -487,7 +487,6 @@ class App {
                 {
                     inside = true;
                     HitPlaneDirection = direction;
-                    HitPlaneDirection = Planes[currentPlaneId];
                 }
             }
             else
@@ -496,7 +495,7 @@ class App {
                     &&position.y <= highest.y && position.y >= lowest.y)
                 {
                     inside = true;
-                    HitPlaneDirection = Planes[currentPlaneId];
+                    HitPlaneDirection = direction;
                 }
             }
 
