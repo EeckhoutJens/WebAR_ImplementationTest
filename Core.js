@@ -86,7 +86,7 @@ let ConstrainedYPos = 0;
 
 //Second step, place points in the top corners of adjacent wall
 let PlacingPoints = false;
-const MinDistance = 1;
+const MinDistance = 0.2;
 let NrOfPlanes = 0;
 
 //Third step, if a placed point is close enough to a previous point close of and move to next step
@@ -95,6 +95,7 @@ let FinishedPlacingPlanes = false;
 
 let ModelID;
 let SpawnedModel;
+let PlaneToSpawnIn;
 
 let pmremGenerator;
 
@@ -230,8 +231,8 @@ class App {
             context: this.gl
         });
         this.renderer.autoClear = false;
-        // this.renderer.shadowMap.enabled = true;
-        // this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
         /** Initialize our demo scene. */
         const scene = new THREE.Scene();
@@ -240,9 +241,9 @@ class App {
         // without lights in our scenes. Let's add an ambient light
         // so our material can be visible, as well as a directional light
         // for the shadow.
-        const light = new THREE.AmbientLight(0xffffff, 1);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.3);
-        directionalLight.position.set(10, 15, 10);
+        const light = new THREE.AmbientLight(0x222222);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(0, 1, 0).normalize();
 
         // We want this light to cast shadow.
         directionalLight.castShadow = true;
@@ -289,12 +290,6 @@ class App {
      * Once 2 or more points have been placed create lines*/
     onSelect = () =>
     {
-        if (FinishedPlacingPlanes)
-        {
-            if (ModelID != null)
-                this.LoadModel(this.reticle.position, this.scene);
-        }
-
         if (PlacingPoints)
         {
             for(let i = 0; i < Points.length; ++i)
@@ -307,6 +302,7 @@ class App {
                     this.CreatePlanes();
                     this.DrawPlanes();
                     document.getElementById("OpenButton").style.display = "block";
+                    this.CreateButton();
                 }
             }
             if (!FinishedPlacingPlanes)
@@ -385,14 +381,14 @@ class App {
             for(let j = 0; j < Points.length; ++j)
             {
                 let point = new THREE.Vector3(0,0,0);
-                point.copy(Points[i]);
+                point.copy(Points[j]);
                 linePoints.push(point);
             }
             let closePoint = new THREE.Vector3(0,0,0);
             closePoint.copy(Points[0]);
             linePoints.push(closePoint);
             const material = new THREE.LineBasicMaterial({color: 0x0000ff});
-            const geometry = new THREE.BufferGeometry().setFromPoints(Planes[i]);
+            const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
             const line = new THREE.Line(geometry,material);
             this.scene.add(line);
         }
@@ -406,75 +402,128 @@ class App {
         {
             this.scene.remove(SpawnedModel);
         }
+        let direction = this.CalculatePlaneDirection();
+        let absDirection = new THREE.Vector3(0,0,0);
+        absDirection.copy(direction);
+        absDirection.x = Math.abs(absDirection.x);
+        absDirection.y = Math.abs(absDirection.y);
+        absDirection.z = Math.abs(absDirection.z);
         new THREE.RGBELoader()
             .setDataType(THREE.UnsignedByteType)
             .setPath('Textures/')
-            .load('photo_studio_01_1k.hdr', function (texture)
-            {
+            .load('photo_studio_01_1k.hdr', function (texture) {
                 var envmap = pmremGenerator.fromEquirectangular(texture).texture;
-                scene.environment = envmap;
+                //scene.environment = envmap;
                 texture.dispose();
                 pmremGenerator.dispose();
-
                 window.gltfLoader.setPath('3D/');
-                window.gltfLoader.load(ModelID + ".gltf", function(gltf)
-                {
+                window.gltfLoader.load(ModelID + ".gltf", function (gltf) {
                     SpawnedModel = gltf.scene;
+                    if (absDirection.x > absDirection.z)
+                    {
+                        if (direction.x < 0)
+                            SpawnedModel.rotateY(Math.PI);
+                    }
+                    else
+                    {
+                        if (direction.z  < 0)
+                            SpawnedModel.rotateY(-Math.PI / 2)
+                        if (direction.z  > 0)
+                            SpawnedModel.rotateY(Math.PI / 2)
+
+                    }
                     SpawnedModel.position.copy(position);
                     scene.add(SpawnedModel);
-                })
+                    const shadowMesh = scene.children.find(c => c.name === 'shadowMesh');
+                    shadowMesh.position.y = SpawnedModel.position.y
+                });
             });
     }
 
     IsInPlane(position)
     {
         var inside = false;
-        var highest = new THREE.Vector3(0,0,0);
-        var lowest = new THREE.Vector3(0,0,0);
         for(var currentPlaneId = 0; currentPlaneId < Planes.length;++currentPlaneId)
         {
+            var highest = new THREE.Vector3(0,0,0);
+            var lowest = new THREE.Vector3(0,0,0);
             var currentPoints = Planes[currentPlaneId];
+            highest.copy(currentPoints[0]);
+            lowest.copy(currentPoints[0]);
             for(var i = 0; i < currentPoints.length; ++i)
             {
-                if (i === 0)
-                {
-                    highest.copy( currentPoints[i].position);
-                    lowest.copy( currentPoints[i].position);
-                }
-
                 //Calculate boundaries
-                if (highest.x < currentPoints[i].position.x)
-                    highest.x = currentPoints[i].position.x;
+                if (highest.x < currentPoints[i].x)
+                    highest.x = currentPoints[i].x;
 
-                if (highest.y < currentPoints[i].position.y)
-                    highest.y = currentPoints[i].position.y;
+                if (highest.y < currentPoints[i].y)
+                    highest.y = currentPoints[i].y;
 
-                if (highest.z < currentPoints[i].position.z)
-                    highest.z = currentPoints[i].position.z;
+                if (highest.z < currentPoints[i].z)
+                    highest.z = currentPoints[i].z;
 
-                if (lowest.x > currentPoints[i].position.x)
-                    lowest.x = currentPoints[i].position.x;
+                if (lowest.x > currentPoints[i].x)
+                    lowest.x = currentPoints[i].x;
 
-                if (lowest.y > currentPoints[i].position.y)
-                    lowest.y = currentPoints[i].position.y;
+                if (lowest.y > currentPoints[i].y)
+                    lowest.y = currentPoints[i].y;
 
-                if (lowest.z > currentPoints[i].position.z)
-                    lowest.z = currentPoints[i].position.z;
-
-                //Check if given position is within boundary
-                if (position.x <= highest.x && position.x >= lowest.x
-                && position.y <= highest.y && position.y >= lowest.y
-                    &&position.z <= highest.z && position.z >= lowest.z)
-                {
-                    inside = true;
-                    break;
-                }
-
+                if (lowest.z > currentPoints[i].z)
+                    lowest.z = currentPoints[i].z;
+            }
+            //Check if given position is within boundary
+            if (position.x <= highest.x && position.x >= lowest.x
+                &&position.y <= highest.y && position.y >= lowest.y)
+            {
+                inside = true;
+                PlaneToSpawnIn = Planes[currentPlaneId];
             }
         }
 
         return inside;
     }
+
+    CalculatePlaneDirection()
+    {
+        let direction = new THREE.Vector3(0,0,0);
+        direction.copy(PlaneToSpawnIn[2]);
+        direction.sub(PlaneToSpawnIn[1]);
+
+        return direction;
+    }
+
+    CreateButton()
+    {
+        const button = document.createElement('button');
+
+        button.style.display = '';
+
+        button.style.cursor = 'pointer';
+        button.style.left = 'calc(50% - 50px)';
+        button.style.width = '100px';
+        button.textContent = 'NEXT';
+        this.stylizeElement(button);
+
+        button.onmouseenter = function () {
+
+            button.style.opacity = '1.0';
+
+        };
+
+        button.onmouseleave = function () {
+
+            button.style.opacity = '0.5';
+
+        };
+
+        button.onclick = function ()
+        {
+            this.PlaceClicked();
+        }
+
+        document.body.appendChild(button);
+    }
+
     stylizeElement( element ) {
 
         element.style.position = 'absolute';
@@ -489,6 +538,15 @@ class App {
         element.style.opacity = '0.5';
         element.style.outline = 'none';
         element.style.zIndex = '999';
+    }
+
+    PlaceClicked()
+    {
+        if (FinishedPlacingPlanes)
+        {
+            if (ModelID != null)
+                this.LoadModel(this.reticle.position, this.scene);
+        }
     }
 }
 
