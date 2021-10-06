@@ -84,6 +84,8 @@ class Reticle extends THREE.Object3D {
 //Global variables (Should try to get rid of these)
 const Points = [];
 const Planes = [];
+const SpawnedCeilingTrims = [];
+const SpawnedFloorTrims = [];
 const DecorationTypes =
     {
         CeilingTrim: "ceilingTrim",
@@ -98,7 +100,7 @@ const DecorationTypes =
 //First step, place 2 points to determine the height of the walls
 let IsDeterminingHeight = true;
 let Height = 0;
-//Allows to make sure all the dots are placed on the same Y position
+//Ensures all the dots are placed on the same Y position
 let ConstrainedYPos = 0;
 
 //Second step, place points in the top corners of adjacent wall
@@ -111,7 +113,7 @@ let FinishedPlacingPlanes = false;
 //-------------------------------------------------------------------------------------------------
 
 let ModelID;
-let SpawnedModel;
+let SpawnedDecoration;
 let HitPlaneDirection;
 let IsDirectionX = false;
 let pmremGenerator;
@@ -362,6 +364,24 @@ class App {
         Points.length = 0;
     }
 
+    ResetCeilingTrims()
+    {
+        for(let i= 0; i < SpawnedCeilingTrims.length; ++i)
+        {
+            this.scene.remove(SpawnedCeilingTrims[i]);
+        }
+        SpawnedCeilingTrims.length = 0;
+    }
+
+    ResetFloorTrims()
+    {
+        for(let i= 0; i < SpawnedFloorTrims.length; ++i)
+        {
+            this.scene.remove(SpawnedFloorTrims[i]);
+        }
+        SpawnedFloorTrims.length = 0;
+    }
+
     CreateSphere(position)
     {
         const sphereGeometry = new THREE.SphereGeometry(0.05,32,16);
@@ -413,12 +433,13 @@ class App {
 
     LoadModel(position, scene)
     {
-        if (!this.IsInPlane(position))
-            return;
-        if (SpawnedModel != null)
+        if (SpawnedDecoration != null)
         {
-            this.scene.remove(SpawnedModel);
+            this.scene.remove(SpawnedDecoration);
         }
+
+        let inPlane = this.IsInPlane(this.reticle.position);
+
         new THREE.RGBELoader()
             .setDataType(THREE.UnsignedByteType)
             .setPath('Textures/')
@@ -428,41 +449,242 @@ class App {
                 texture.dispose();
                 pmremGenerator.dispose();
                 window.gltfLoader.setPath('3D/');
-                window.gltfLoader.load(ModelID + ".gltf", function (gltf) {
-                    SpawnedModel = gltf.scene;
-                    if (IsDirectionX)
+                switch (decoType)
+                {
+                    case DecorationTypes.Decoration:
+                        if (!inPlane)
+                            return;
+
+                        window.gltfLoader.load(ModelID + ".gltf", function (gltf) {
+                            SpawnedDecoration = gltf.scene;
+
+                            SpawnedDecoration.position.copy(position);
+                            if (IsDirectionX) {
+                                if (HitPlaneDirection.x < 0)
+                                    SpawnedDecoration.rotateY(Math.PI);
+                            } else {
+                                if (HitPlaneDirection.z < 0)
+                                    SpawnedDecoration.rotateY(Math.PI / 2);
+                                if (HitPlaneDirection.z > 0)
+                                    SpawnedDecoration.rotateY(-Math.PI / 2);
+
+                            }
+                            scene.add(SpawnedDecoration);
+                        });
+                        break;
+
+                    case DecorationTypes.CeilingTrim:
+                        app.GenerateCeilingTrims();
+                        break;
+
+                    case DecorationTypes.FloorTrim:
+                        app.GenerateFloorTrims();
+                        break;
+
+                    case DecorationTypes.WallTrim:
+                        break;
+                    //const shadowMesh = scene.children.find(c => c.name === 'shadowMesh');
+                    //shadowMesh.position.y = SpawnedDecoration.position.y
+                };
+            });
+    }
+
+    GenerateCeilingTrims()
+    {
+        this.ResetCeilingTrims();
+        for(let currentPlane = 0; currentPlane < Planes.length; ++currentPlane)
+        {
+            let currentPoints = Planes[currentPlane];
+
+            //Check direction of plane
+            let direction = this.CalculatePlaneDirection(currentPoints);
+            let absDirection = new THREE.Vector3(0,0,0);
+            absDirection.copy(direction);
+            absDirection.x = Math.abs(absDirection.x);
+            absDirection.y = Math.abs(absDirection.y);
+            absDirection.z = Math.abs(absDirection.z);
+            if (absDirection.x > absDirection.z)
+                IsDirectionX = true;
+            else
+                IsDirectionX = false
+
+            let positionOffset = new THREE.Vector3(0,0,0);
+            let nrToSpawn = 0;
+
+            //Initial load so we can use data to calculate additional nr of meshes we still need to load after this
+            window.gltfLoader.load(ModelID + ".gltf", function (gltf)
+            {
+                let trimToSpawn = gltf.scene;
+                trimToSpawn.position.copy(currentPoints[0]);
+                let box = new THREE.Box3().setFromObject(trimToSpawn);
+                let dimensions = new THREE.Vector3(0,0,0);
+                box.getSize(dimensions);
+
+                if (IsDirectionX)
+                {
+                    nrToSpawn = Math.floor(absDirection.x / dimensions.x);
+                    if (direction.x < 0)
                     {
-                        if (HitPlaneDirection.x < 0)
-                            SpawnedModel.rotateY(Math.PI);
+                        trimToSpawn.rotateY(Math.PI);
+                        positionOffset.x = -dimensions.x;
+                        trimToSpawn.position.x -= dimensions.x / 2;
                     }
                     else
                     {
-                        if (HitPlaneDirection.z  < 0)
-                            SpawnedModel.rotateY(Math.PI / 2)
-                        if (HitPlaneDirection.z  > 0)
-                            SpawnedModel.rotateY(-Math.PI / 2)
-
+                        positionOffset.x = dimensions.x;
+                        trimToSpawn.position.x += dimensions.x / 2;
                     }
-                    switch (decoType)
+
+                }
+                else
+                {
+                    nrToSpawn = Math.floor(absDirection.z / dimensions.x);
+                    if (direction.z < 0)
                     {
-                        case DecorationTypes.Decoration:
-                            SpawnedModel.position.copy(position);
-                            break;
-
-                        case DecorationTypes.CeilingTrim:
-                            break;
-
-                        case DecorationTypes.FloorTrim:
-                            break;
-
-                        case DecorationTypes.WallTrim:
-                            break;
+                        trimToSpawn.rotateY(Math.PI / 2)
+                        positionOffset.z = -dimensions.x;
+                        trimToSpawn.position.z -= dimensions.x / 2;
                     }
-                    scene.add(SpawnedModel);
-                    const shadowMesh = scene.children.find(c => c.name === 'shadowMesh');
-                    shadowMesh.position.y = SpawnedModel.position.y
-                });
-            });
+                    if (direction.z > 0)
+                    {
+                        trimToSpawn.rotateY(-Math.PI / 2)
+                        positionOffset.z = dimensions.x;
+                        trimToSpawn.position.z += dimensions.x / 2;
+                    }
+                }
+                app.scene.add(trimToSpawn);
+                SpawnedCeilingTrims.push(trimToSpawn);
+
+                //Decrement nr by one seeing as we already spawned one to get the data
+                --nrToSpawn;
+            })
+
+            //Now we load enough meshes to fill up top line of plane
+            for(let i = 1; i <= nrToSpawn; ++i)
+            {
+                window.gltfLoader.load(ModelID + ".gltf", function (gltf)
+                {
+                    let trimToSpawn = gltf.scene;
+                    trimToSpawn.position.copy(currentPoints[0]);
+                    trimToSpawn.position.add(positionOffset * i);
+                    if (IsDirectionX)
+                    {
+                        if (direction.x < 0)
+                            trimToSpawn.rotateY(Math.PI);
+                    }
+                    else
+                    {
+                        if (HitPlaneDirection.z < 0)
+                            trimToSpawn.rotateY(Math.PI / 2);
+                        if (HitPlaneDirection.z > 0)
+                            trimToSpawn.rotateY(-Math.PI / 2);
+                    }
+                    app.scene.add(trimToSpawn);
+                    SpawnedCeilingTrims.push(trimToSpawn);
+                })
+            }
+
+
+        }
+    }
+
+    GenerateFloorTrims()
+    {
+        this.ResetFloorTrims();
+        for(let currentPlane = 0; currentPlane < Planes.length; ++currentPlane)
+        {
+            let currentPoints = Planes[currentPlane];
+
+            //Check direction of plane
+            let direction = this.CalculatePlaneDirection(currentPoints);
+            let absDirection = new THREE.Vector3(0,0,0);
+            absDirection.copy(direction);
+            absDirection.x = Math.abs(absDirection.x);
+            absDirection.y = Math.abs(absDirection.y);
+            absDirection.z = Math.abs(absDirection.z);
+            if (absDirection.x > absDirection.z)
+                IsDirectionX = true;
+            else
+                IsDirectionX = false
+
+            let positionOffset = new THREE.Vector3(0,0,0);
+            let nrToSpawn = 0;
+
+            //Initial load so we can use data to calculate additional nr of meshes we still need to load after this
+            window.gltfLoader.load(ModelID + ".gltf", function (gltf)
+            {
+                let trimToSpawn = gltf.scene;
+                trimToSpawn.position.copy(currentPoints[1]);
+                let box = new THREE.Box3().setFromObject(trimToSpawn);
+                let dimensions = new THREE.Vector3(0,0,0);
+                box.getSize(dimensions);
+
+                if (IsDirectionX)
+                {
+                    nrToSpawn = Math.floor(absDirection.x / dimensions.x);
+                    if (direction.x < 0)
+                    {
+                        trimToSpawn.rotateY(Math.PI);
+                        positionOffset.x = -dimensions.x;
+                        trimToSpawn.position.x -= dimensions.x / 2;
+                    }
+                    else
+                    {
+                        positionOffset.x = dimensions.x;
+                        trimToSpawn.position.x += dimensions.x / 2;
+                    }
+
+                }
+                else
+                {
+                    nrToSpawn = Math.floor(absDirection.z / dimensions.x);
+                    if (direction.z < 0)
+                    {
+                        trimToSpawn.rotateY(Math.PI / 2)
+                        positionOffset.z = -dimensions.x;
+                        trimToSpawn.position.z -= dimensions.x / 2;
+                    }
+                    if (direction.z > 0)
+                    {
+                        trimToSpawn.rotateY(-Math.PI / 2)
+                        positionOffset.z = dimensions.x;
+                        trimToSpawn.position.z += dimensions.x / 2;
+                    }
+                }
+                app.scene.add(trimToSpawn);
+                SpawnedFloorTrims.push(trimToSpawn);
+
+                //Decrement nr by one seeing as we already spawned one to get the data
+                --nrToSpawn;
+            })
+
+            //Now we load enough meshes to fill up bottom line of plane if necessary
+            for(let i = 1; i <= nrToSpawn; ++i)
+            {
+                window.gltfLoader.load(ModelID + ".gltf", function (gltf)
+                {
+                    let trimToSpawn = gltf.scene;
+                    trimToSpawn.position.copy(currentPoints[1]);
+                    trimToSpawn.position.add(positionOffset * i);
+                    if (IsDirectionX)
+                    {
+                        if (direction.x < 0)
+                            trimToSpawn.rotateY(Math.PI);
+                    }
+                    else
+                    {
+                        if (HitPlaneDirection.z < 0)
+                            trimToSpawn.rotateY(Math.PI / 2);
+                        if (HitPlaneDirection.z > 0)
+                            trimToSpawn.rotateY(-Math.PI / 2);
+                    }
+                    app.scene.add(trimToSpawn);
+                    SpawnedFloorTrims.push(trimToSpawn);
+                })
+            }
+
+
+        }
     }
 
     IsInPlane(position)
@@ -523,7 +745,7 @@ class App {
             else
             {
                 if (position.z <= highest.z && position.z >= lowest.z
-                    &&position.y <= highest.y && position.y >= lowest.y)
+                    && position.y <= highest.y && position.y >= lowest.y)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
@@ -576,7 +798,8 @@ class App {
         document.body.appendChild(button);
     }
 
-    stylizeElement( element ) {
+    stylizeElement( element )
+    {
 
         element.style.position = 'absolute';
         element.style.bottom = '60px';
