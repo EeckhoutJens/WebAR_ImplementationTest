@@ -115,7 +115,7 @@ let FinishedPlacingPlanes = false;
 //-------------------------------------------------------------------------------------------------
 
 let ModelID;
-let SpawnedDecoration;
+let SpawnedDecorations = [];
 let HitPlaneDirection;
 let IsDirectionX = false;
 let CurrentFrame;
@@ -240,15 +240,54 @@ class App {
                 this.reticle.updateMatrixWorld(true);
             }
 
-            for (const {anchoredObject, anchor} of Points) {
-                // only update the object's position if it's still in the list
-                // of frame.trackedAnchors
+            // only update the object's position if it's still in the list
+            // of frame.trackedAnchors
+            for (const {anchoredObject, anchor} of Points)
+            {
                 if (!frame.trackedAnchors.has(anchor)) {
                     continue;
                 }
                 const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
                 anchoredObject.matrix.set(anchorPose.transform.matrix);
             }
+
+            for (const {anchoredObject, anchor} of SpawnedCeilingTrims)
+            {
+                if (!frame.trackedAnchors.has(anchor)) {
+                    continue;
+                }
+                const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
+                anchoredObject.matrix.set(anchorPose.transform.matrix);
+            }
+
+            for (const {anchoredObject, anchor} of SpawnedFloorTrims)
+            {
+                if (!frame.trackedAnchors.has(anchor)) {
+                    continue;
+                }
+                const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
+                anchoredObject.matrix.set(anchorPose.transform.matrix);
+            }
+
+            for (const {anchoredObject, anchor} of SpawnedWallTrims)
+            {
+                if (!frame.trackedAnchors.has(anchor)) {
+                    continue;
+                }
+                const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
+                anchoredObject.matrix.set(anchorPose.transform.matrix);
+            }
+
+            for (const {anchoredObject, anchor} of SpawnedDecorations)
+            {
+                if (!frame.trackedAnchors.has(anchor)) {
+                    continue;
+                }
+                const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
+                anchoredObject.matrix.set(anchorPose.transform.matrix);
+            }
+
+
             /** Render the scene with THREE.WebGLRenderer. */
             this.renderer.render(this.scene, this.camera)
         }
@@ -346,7 +385,7 @@ class App {
             {
                 let FirstLocation = new THREE.Vector3(0,0,0);
                 FirstLocation.copy(this.reticle.position);
-                FirstLocation.z = ConstrainedYPos;
+                FirstLocation.y = ConstrainedYPos;
                 let Point1 = this.CreateSphere(FirstLocation)
 
                 reticleHitTestResult.createAnchor().then((anchor) =>
@@ -364,12 +403,12 @@ class App {
 
                 let SecondLocation = new THREE.Vector3(0,0,0);
                 SecondLocation.copy(FirstLocation);
-                SecondLocation.z = ConstrainedYPos - Height;
+                SecondLocation.y = ConstrainedYPos - Height;
                 let Point2 = this.CreateSphere(SecondLocation);
                 let hitPose = reticleHitTestResult.getPose(this.localReferenceSpace);
                 let transformPosition = new THREE.Vector3(0,0,0);
                 transformPosition.copy(hitPose.transform.position);
-                transformPosition.z = ConstrainedYPos - Height;
+                transformPosition.y = ConstrainedYPos - Height;
                 let XRTransform = new XRRigidTransform(transformPosition, hitPose.transform.orientation);
 
                 reticleHitTestResult.createAnchor(XRTransform, this.localReferenceSpace).then((anchor) =>
@@ -400,8 +439,8 @@ class App {
 
                 if (Points.length === 2)
                 {
-                    ConstrainedYPos = Points[1].anchoredObject.position.z;
-                    Height = ConstrainedYPos - Points[0].anchoredObject.position.z;
+                    ConstrainedYPos = Points[1].anchoredObject.position.y;
+                    Height = ConstrainedYPos - Points[0].anchoredObject.position.y;
                     this.ResetPoints();
                     IsDeterminingHeight = false;
                     PlacingPoints = true;
@@ -424,7 +463,8 @@ class App {
     {
         for(let i= 0; i < SpawnedCeilingTrims.length; ++i)
         {
-            this.scene.remove(SpawnedCeilingTrims[i]);
+            this.scene.remove(SpawnedCeilingTrims[i].anchoredObject);
+            SpawnedCeilingTrims[i].anchor.delete();
         }
         SpawnedCeilingTrims.length = 0;
     }
@@ -433,7 +473,8 @@ class App {
     {
         for(let i= 0; i < SpawnedFloorTrims.length; ++i)
         {
-            this.scene.remove(SpawnedFloorTrims[i]);
+            this.scene.remove(SpawnedFloorTrims[i].anchoredObject);
+            SpawnedFloorTrims[i].anchor.delete();
         }
         SpawnedFloorTrims.length = 0;
     }
@@ -442,7 +483,8 @@ class App {
     {
         for(let i= 0; i < SpawnedWallTrims.length; ++i)
         {
-            this.scene.remove(SpawnedWallTrims[i]);
+            this.scene.remove(SpawnedWallTrims[i].anchoredObject);
+            SpawnedWallTrims[i].anchor.delete();
         }
         SpawnedWallTrims.length = 0;
     }
@@ -514,26 +556,30 @@ class App {
                     case DecorationTypes.Decoration:
                         if (!inPlane)
                             return;
-                        if (SpawnedDecoration != null)
-                        {
-                            app.scene.remove(SpawnedDecoration);
-                        }
 
                         window.gltfLoader.load(ModelID + ".gltf", function (gltf) {
-                            SpawnedDecoration = gltf.scene;
+                            let decoration = gltf.scene;
 
-                            SpawnedDecoration.position.copy(position);
+                            decoration.position.copy(position);
                             if (IsDirectionX) {
                                 if (HitPlaneDirection.x < 0)
-                                    SpawnedDecoration.rotateY(Math.PI);
+                                    decoration.rotateY(Math.PI);
                             } else {
                                 if (HitPlaneDirection.z < 0)
-                                    SpawnedDecoration.rotateY(Math.PI / 2);
+                                    decoration.rotateY(Math.PI / 2);
                                 if (HitPlaneDirection.z > 0)
-                                    SpawnedDecoration.rotateY(-Math.PI / 2);
+                                    decoration.rotateY(-Math.PI / 2);
 
                             }
-                            scene.add(SpawnedDecoration);
+                            let XRTransform = new XRRigidTransform(decoration.position, decoration.orientation);
+                            reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
+                            {
+                                SpawnedDecorations.push({
+                                    anchoredObject: decoration,
+                                    anchor: anchor
+                                });
+                            });
+                            scene.add(decoration);
                         });
                         break;
 
@@ -550,7 +596,7 @@ class App {
                         break;
                     //const shadowMesh = scene.children.find(c => c.name === 'shadowMesh');
                     //shadowMesh.position.y = SpawnedDecoration.position.y
-                };
+                }
             });
     }
 
@@ -568,10 +614,7 @@ class App {
             absDirection.x = Math.abs(absDirection.x);
             absDirection.y = Math.abs(absDirection.y);
             absDirection.z = Math.abs(absDirection.z);
-            if (absDirection.x > absDirection.z)
-                IsDirectionX = true;
-            else
-                IsDirectionX = false
+            IsDirectionX = absDirection.x > absDirection.z;
 
             let positionOffset = new THREE.Vector3(0,0,0);
             let nrToSpawn = 0;
@@ -617,8 +660,15 @@ class App {
                         trimToSpawn.position.z += dimensions.x / 2;
                     }
                 }
+                let XRTransform = new XRRigidTransform(trimToSpawn.position, trimToSpawn.orientation);
+                reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
+                {
+                    SpawnedCeilingTrims.push({
+                        anchoredObject: trimToSpawn,
+                        anchor: anchor
+                    });
+                });
                 app.scene.add(trimToSpawn);
-                SpawnedCeilingTrims.push(trimToSpawn);
 
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawn;
@@ -658,8 +708,15 @@ class App {
                             trimToSpawn.position.z += dimensions.x / 2;
                         }
                     }
+                    let XRTransform = new XRRigidTransform(trimToSpawn.position, trimToSpawn.orientation);
+                    reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
+                    {
+                        SpawnedCeilingTrims.push({
+                            anchoredObject: trimToSpawn,
+                            anchor: anchor
+                        });
+                    });
                     app.scene.add(trimToSpawn);
-                    SpawnedCeilingTrims.push(trimToSpawn);
                 })
             }
         }
@@ -679,10 +736,7 @@ class App {
             absDirection.x = Math.abs(absDirection.x);
             absDirection.y = Math.abs(absDirection.y);
             absDirection.z = Math.abs(absDirection.z);
-            if (absDirection.x > absDirection.z)
-                IsDirectionX = true;
-            else
-                IsDirectionX = false
+            IsDirectionX = absDirection.x > absDirection.z;
 
             let positionOffset = new THREE.Vector3(0,0,0);
             let nrToSpawn = 0;
@@ -728,8 +782,15 @@ class App {
                         trimToSpawn.position.z += dimensions.x / 2;
                     }
                 }
+                let XRTransform = new XRRigidTransform(trimToSpawn.position, trimToSpawn.orientation);
+                reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
+                {
+                    SpawnedFloorTrims.push({
+                        anchoredObject: trimToSpawn,
+                        anchor: anchor
+                    });
+                });
                 app.scene.add(trimToSpawn);
-                SpawnedFloorTrims.push(trimToSpawn);
 
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawn;
@@ -769,8 +830,15 @@ class App {
                             trimToSpawn.position.z += dimensions.x / 2;
                         }
                     }
+                    let XRTransform = new XRRigidTransform(trimToSpawn.position, trimToSpawn.orientation);
+                    reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
+                    {
+                        SpawnedFloorTrims.push({
+                            anchoredObject: trimToSpawn,
+                            anchor: anchor
+                        });
+                    });
                     app.scene.add(trimToSpawn);
-                    SpawnedFloorTrims.push(trimToSpawn);
                 })
             }
 
@@ -793,10 +861,7 @@ class App {
             absDirection.x = Math.abs(absDirection.x);
             absDirection.y = Math.abs(absDirection.y);
             absDirection.z = Math.abs(absDirection.z);
-            if (absDirection.x > absDirection.z)
-                IsDirectionX = true;
-            else
-                IsDirectionX = false
+            IsDirectionX = absDirection.x > absDirection.z;
 
             let positionOffset = new THREE.Vector3(0,0,0);
             let nrToSpawn = 0;
@@ -806,11 +871,10 @@ class App {
             {
                 let trimToSpawn = gltf.scene;
                 trimToSpawn.position.copy(currentPoints[0]);
-                trimToSpawn.position.z = app.reticle.position.z;
+                trimToSpawn.position.y = app.reticle.position.y;
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
                 let dimensions = new THREE.Vector3(0,0,0);
                 box.getSize(dimensions);
-
                 if (IsDirectionX)
                 {
                     nrToSpawn = Math.floor(absDirection.x / dimensions.x);
@@ -843,8 +907,15 @@ class App {
                         trimToSpawn.position.z += dimensions.x / 2;
                     }
                 }
+                let XRTransform = new XRRigidTransform(trimToSpawn.position, trimToSpawn.orientation);
+                reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
+                {
+                    SpawnedWallTrims.push({
+                        anchoredObject: trimToSpawn,
+                        anchor: anchor
+                    });
+                });
                 app.scene.add(trimToSpawn);
-                SpawnedWallTrims.push(trimToSpawn);
 
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawn;
@@ -857,7 +928,7 @@ class App {
                 {
                     let trimToSpawn = gltf.scene;
                     trimToSpawn.position.copy(currentPoints[0]);
-                    trimToSpawn.position.z = app.reticle.position.z;
+                    trimToSpawn.position.y = app.reticle.position.y;
                     trimToSpawn.position.add(positionOffset * i);
 
                     if (IsDirectionX)
@@ -887,8 +958,15 @@ class App {
                             trimToSpawn.position.z += dimensions.x / 2;
                         }
                     }
+                    let XRTransform = new XRRigidTransform(trimToSpawn.position, trimToSpawn.orientation);
+                    reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
+                    {
+                        SpawnedWallTrims.push({
+                            anchoredObject: trimToSpawn,
+                            anchor: anchor
+                        });
+                    });
                     app.scene.add(trimToSpawn);
-                    SpawnedWallTrims.push(trimToSpawn);
                 })
             }
         }
@@ -933,17 +1011,14 @@ class App {
             absDirection.x = Math.abs(absDirection.x);
             absDirection.y = Math.abs(absDirection.y);
             absDirection.z = Math.abs(absDirection.z);
-            if (absDirection.x > absDirection.z)
-                IsDirectionX = true;
-            else
-                IsDirectionX = false
+            IsDirectionX = absDirection.x > absDirection.z;
 
 
             //Check if given position is within boundary
             if (IsDirectionX)
             {
                 if (position.x <= highest.x && position.x >= lowest.x
-                    &&position.z <= highest.z && position.z >= lowest.z)
+                    &&position.y <= highest.y && position.y >= lowest.y)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
@@ -952,7 +1027,7 @@ class App {
             else
             {
                 if (position.z <= highest.z && position.z >= lowest.z
-                    && position.x <= highest.x && position.x >= lowest.x)
+                    && position.y <= highest.y && position.y >= lowest.y)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
