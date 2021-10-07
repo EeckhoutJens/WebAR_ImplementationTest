@@ -438,9 +438,9 @@ class App {
         new THREE.RGBELoader()
             .setDataType(THREE.UnsignedByteType)
             .setPath('Textures/')
-            .load('photo_studio_01_1k.hdr', function (texture) {
+            .load('lebombo_1k.hdr', function (texture) {
                 var envmap = pmremGenerator.fromEquirectangular(texture).texture;
-                //scene.environment = envmap;
+                scene.environment = envmap;
                 texture.dispose();
                 pmremGenerator.dispose();
                 window.gltfLoader.setPath('3D/');
