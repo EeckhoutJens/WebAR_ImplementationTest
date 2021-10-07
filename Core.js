@@ -120,6 +120,9 @@ let HitPlaneDirection;
 let IsDirectionX = false;
 let CurrentFrame;
 let pmremGenerator;
+let gui;
+let params = {color: "#1861b3" };
+let color;
 
 //Container class to handle WebXR logic
 //Adapted from the AR with WebXR workshop project by Google
@@ -362,6 +365,11 @@ class App {
         pmremGenerator.compileEquirectangularShader();
     }
 
+    UpdateColor()
+    {
+        color = new THREE.Color(params.color);
+    }
+
     /** Place a point when the screen is tapped.
      * Once 2 or more points have been placed create lines*/
     onSelect = () =>
@@ -379,6 +387,12 @@ class App {
                     this.DrawPlanes();
                     document.getElementById("OpenButton").style.display = "block";
                     this.CreateButton();
+
+
+                    //Set up colorPicker
+                    gui = new dat.GUI();
+                    gui.addColor(params, 'color').onChange(this.UpdateColor());
+                    break;
                 }
             }
             if (!FinishedPlacingPlanes)
