@@ -331,7 +331,7 @@ class App {
                 FirstLocation.z = ConstrainedYPos;
                 this.CreateSphere(FirstLocation);
                 let SecondLocation = new THREE.Vector3(0,0,0);
-                SecondLocation.copy(this.reticle.position);
+                SecondLocation.copy(FirstLocation);
                 SecondLocation.z = ConstrainedYPos - Height;
                 this.CreateSphere(SecondLocation);
                 if (Points.length >= 4)
