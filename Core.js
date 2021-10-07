@@ -97,6 +97,7 @@ const DecorationTypes =
 
     let decoType = DecorationTypes.Decoration;
 
+let reticleHitTestResult;
 //PLANE DETECTION
 //First step, place 2 points to determine the height of the walls
 let IsDeterminingHeight = true;
@@ -117,6 +118,7 @@ let ModelID;
 let SpawnedDecoration;
 let HitPlaneDirection;
 let IsDirectionX = false;
+let CurrentFrame;
 let pmremGenerator;
 
 //Container class to handle WebXR logic
@@ -130,7 +132,7 @@ class App {
         try {
             /** initialize a WebXR session using extra required features. */
             this.xrSession = await navigator.xr.requestSession("immersive-ar", {
-                requiredFeatures: ['hit-test', 'dom-overlay'],
+                requiredFeatures: ['hit-test', 'dom-overlay', 'anchors'],
                 domOverlay: { root: document.body }
             });
 
@@ -192,6 +194,10 @@ class App {
      * Called with the time and XRPresentationFrame.
      */
     onXRFrame = (time, frame) => {
+
+        /** Store current frame*/
+        CurrentFrame = frame;
+
         /** Queue up the next draw request. */
         this.xrSession.requestAnimationFrame(this.onXRFrame);
 
@@ -228,6 +234,7 @@ class App {
                 let hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
 
                 /** Update the reticle position. */
+                reticleHitTestResult = hitTestResults[0];
                 this.reticle.visible = true;
                 this.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
                 this.reticle.updateMatrixWorld(true);
@@ -330,11 +337,31 @@ class App {
                 let FirstLocation = new THREE.Vector3(0,0,0);
                 FirstLocation.copy(this.reticle.position);
                 FirstLocation.z = ConstrainedYPos;
-                this.CreateSphere(FirstLocation);
+                let Point1 = this.CreateSphere(FirstLocation)
+
+                reticleHitTestResult.createAnchor().then((anchor) =>
+                {
+                    Points.push({
+                        anchoredObject: Point1,
+                        anchor: anchor
+                    });
+                });
+
                 let SecondLocation = new THREE.Vector3(0,0,0);
                 SecondLocation.copy(FirstLocation);
                 SecondLocation.z = ConstrainedYPos - Height;
-                this.CreateSphere(SecondLocation);
+                let Point2 = this.CreateSphere(SecondLocation);
+                let hitPose = reticleHitTestResult.getPose(this.localReferenceSpace);
+                hitPose.transform.position.z = ConstrainedYPos - Height;
+
+                CurrentFrame.createAnchor(hitPose, this.localReferenceSpace).then((anchor) =>
+                {
+                    Points.push({
+                        anchoredObject: Point2,
+                        anchor: anchor
+                    });
+                });
+
                 if (Points.length >= 4)
                 {
                     ++NrOfPlanes;
@@ -399,7 +426,7 @@ class App {
         const sphere = new THREE.Mesh(sphereGeometry,sphereMaterial);
         sphere.position.copy(position);
         this.scene.add(sphere)
-        Points.push(sphere);
+        return sphere;
     }
 
     CreatePlanes()
