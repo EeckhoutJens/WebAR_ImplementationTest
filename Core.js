@@ -239,6 +239,16 @@ class App {
                 this.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
                 this.reticle.updateMatrixWorld(true);
             }
+
+            for (const {anchoredObject, anchor} of Points) {
+                // only update the object's position if it's still in the list
+                // of frame.trackedAnchors
+                if (!frame.trackedAnchors.has(anchor)) {
+                    continue;
+                }
+                const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
+                anchoredObject.matrix.set(anchorPose.transform.matrix);
+            }
             /** Render the scene with THREE.WebGLRenderer. */
             this.renderer.render(this.scene, this.camera)
         }
@@ -319,9 +329,9 @@ class App {
     {
         if (PlacingPoints)
         {
-            for(let i = 0; i < Points.length; ++i)
+            for (const {anchoredObject, anchor} of Points)
             {
-                let distanceToMarker = Points[i].position.distanceToSquared(this.reticle.position);
+                let distanceToMarker = anchoredObject.position.distanceToSquared(this.reticle.position);
                 if (distanceToMarker < MinDistance)
                 {
                     FinishedPlacingPlanes = true;
@@ -345,6 +355,11 @@ class App {
                         anchoredObject: Point1,
                         anchor: anchor
                     });
+
+                    if (Points.length >= 4)
+                    {
+                        ++NrOfPlanes;
+                    }
                 });
 
                 let SecondLocation = new THREE.Vector3(0,0,0);
@@ -352,43 +367,55 @@ class App {
                 SecondLocation.z = ConstrainedYPos - Height;
                 let Point2 = this.CreateSphere(SecondLocation);
                 let hitPose = reticleHitTestResult.getPose(this.localReferenceSpace);
-                hitPose.transform.position.z = ConstrainedYPos - Height;
+                let transformPosition = new THREE.Vector3(0,0,0);
+                transformPosition.copy(hitPose.transform.position);
+                transformPosition.z = ConstrainedYPos - Height;
+                let XRTransform = new XRRigidTransform(transformPosition, hitPose.transform.orientation);
 
-                CurrentFrame.createAnchor(hitPose, this.localReferenceSpace).then((anchor) =>
+                reticleHitTestResult.createAnchor(XRTransform, this.localReferenceSpace).then((anchor) =>
                 {
                     Points.push({
                         anchoredObject: Point2,
                         anchor: anchor
                     });
+
+                    if (Points.length >= 4)
+                    {
+                        ++NrOfPlanes;
+                    }
                 });
 
-                if (Points.length >= 4)
-                {
-                    ++NrOfPlanes;
-                }
             }
         }
 
         if (IsDeterminingHeight)
         {
             let test = this.CreateSphere(this.reticle.position);
-            Points.push(test);
-            if (Points.length === 2)
+            reticleHitTestResult.createAnchor().then((anchor) =>
             {
-                ConstrainedYPos = Points[1].position.z;
-                Height = Points[1].position.z - Points[0].position.z;
-                this.ResetPoints();
-                IsDeterminingHeight = false;
-                PlacingPoints = true;
-            }
-            }
+                Points.push({
+                    anchoredObject: test,
+                    anchor: anchor
+                });
+
+                if (Points.length === 2)
+                {
+                    ConstrainedYPos = Points[1].anchoredObject.position.z;
+                    Height = ConstrainedYPos - Points[0].anchoredObject.position.z;
+                    this.ResetPoints();
+                    IsDeterminingHeight = false;
+                    PlacingPoints = true;
+                }
+            });
+        }
     }
 
     ResetPoints()
     {
         for(let i= 0; i < Points.length; ++i)
         {
-            this.scene.remove(Points[i]);
+            this.scene.remove(Points[i].anchoredObject);
+            Points[i].anchor.delete();
         }
         Points.length = 0;
     }
@@ -438,10 +465,10 @@ class App {
             //Add Points that define plane to array and store that array
             //LeftTop - LeftBottom - RightBottom - RightTop
             const planePoints = [];
-            planePoints.push(Points[startIndex].position);
-            planePoints.push(Points[startIndex + 1].position)
-            planePoints.push(Points[startIndex + 3].position)
-            planePoints.push(Points[startIndex + 2].position)
+            planePoints.push(Points[startIndex].anchoredObject.position);
+            planePoints.push(Points[startIndex + 1].anchoredObject.position)
+            planePoints.push(Points[startIndex + 3].anchoredObject.position)
+            planePoints.push(Points[startIndex + 2].anchoredObject.position)
             Planes.push(planePoints);
             startIndex += 2;
         }
