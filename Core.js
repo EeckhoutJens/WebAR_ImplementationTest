@@ -86,6 +86,7 @@ const Points = [];
 const Planes = [];
 const SpawnedCeilingTrims = [];
 const SpawnedFloorTrims = [];
+const SpawnedWallTrims = [];
 const DecorationTypes =
     {
         CeilingTrim: "ceilingTrim",
@@ -382,6 +383,15 @@ class App {
         SpawnedFloorTrims.length = 0;
     }
 
+    ResetWallTrims()
+    {
+        for(let i= 0; i < SpawnedWallTrims.length; ++i)
+        {
+            this.scene.remove(SpawnedWallTrims[i]);
+        }
+        SpawnedWallTrims.length = 0;
+    }
+
     CreateSphere(position)
     {
         const sphereGeometry = new THREE.SphereGeometry(0.05,32,16);
@@ -481,6 +491,7 @@ class App {
                         break;
 
                     case DecorationTypes.WallTrim:
+                        app.GenerateWallTrims();
                         break;
                     //const shadowMesh = scene.children.find(c => c.name === 'shadowMesh');
                     //shadowMesh.position.y = SpawnedDecoration.position.y
@@ -709,6 +720,122 @@ class App {
             }
 
 
+        }
+    }
+
+    //Ensure to change Z to Y when testing vertical planes
+    GenerateWallTrims()
+    {
+        this.ResetWallTrims();
+        for(let currentPlane = 0; currentPlane < Planes.length; ++currentPlane)
+        {
+            let currentPoints = Planes[currentPlane];
+
+            //Check direction of plane
+            let direction = this.CalculatePlaneDirection(currentPoints);
+            let absDirection = new THREE.Vector3(0,0,0);
+            absDirection.copy(direction);
+            absDirection.x = Math.abs(absDirection.x);
+            absDirection.y = Math.abs(absDirection.y);
+            absDirection.z = Math.abs(absDirection.z);
+            if (absDirection.x > absDirection.z)
+                IsDirectionX = true;
+            else
+                IsDirectionX = false
+
+            let positionOffset = new THREE.Vector3(0,0,0);
+            let nrToSpawn = 0;
+
+            //Initial load so we can use data to calculate additional nr of meshes we still need to load after this
+            window.gltfLoader.load(ModelID + ".gltf", function (gltf)
+            {
+                let trimToSpawn = gltf.scene;
+                trimToSpawn.position.copy(currentPoints[0]);
+                trimToSpawn.position.z = app.reticle.position.z;
+                let box = new THREE.Box3().setFromObject(trimToSpawn);
+                let dimensions = new THREE.Vector3(0,0,0);
+                box.getSize(dimensions);
+
+                if (IsDirectionX)
+                {
+                    nrToSpawn = Math.floor(absDirection.x / dimensions.x);
+                    if (direction.x < 0)
+                    {
+                        trimToSpawn.rotateY(Math.PI);
+                        positionOffset.x = -dimensions.x;
+                        trimToSpawn.position.x -= dimensions.x / 2;
+                    }
+                    else
+                    {
+                        positionOffset.x = dimensions.x;
+                        trimToSpawn.position.x += dimensions.x / 2;
+                    }
+
+                }
+                else
+                {
+                    nrToSpawn = Math.floor(absDirection.z / dimensions.x);
+                    if (direction.z < 0)
+                    {
+                        trimToSpawn.rotateY(Math.PI / 2)
+                        positionOffset.z = -dimensions.x;
+                        trimToSpawn.position.z -= dimensions.x / 2;
+                    }
+                    if (direction.z > 0)
+                    {
+                        trimToSpawn.rotateY(-Math.PI / 2)
+                        positionOffset.z = dimensions.x;
+                        trimToSpawn.position.z += dimensions.x / 2;
+                    }
+                }
+                app.scene.add(trimToSpawn);
+                SpawnedWallTrims.push(trimToSpawn);
+
+                //Decrement nr by one seeing as we already spawned one to get the data
+                --nrToSpawn;
+            })
+
+            //Now we load enough meshes to fill up wall
+            for(let i = 1; i <= nrToSpawn; ++i)
+            {
+                window.gltfLoader.load(ModelID + ".gltf", function (gltf)
+                {
+                    let trimToSpawn = gltf.scene;
+                    trimToSpawn.position.copy(currentPoints[0]);
+                    trimToSpawn.position.z = app.reticle.position.z;
+                    trimToSpawn.position.add(positionOffset * i);
+
+                    if (IsDirectionX)
+                    {
+                        if (direction.x < 0)
+                        {
+                            trimToSpawn.rotateY(Math.PI);
+                            trimToSpawn.position.x -= dimensions.x / 2;
+                        }
+                        else
+                        {
+                            trimToSpawn.position.x += dimensions.x / 2;
+                        }
+
+                    }
+                    else
+                    {
+                        nrToSpawn = Math.floor(absDirection.z / dimensions.x);
+                        if (direction.z < 0)
+                        {
+                            trimToSpawn.rotateY(Math.PI / 2)
+                            trimToSpawn.position.z -= dimensions.x / 2;
+                        }
+                        if (direction.z > 0)
+                        {
+                            trimToSpawn.rotateY(-Math.PI / 2)
+                            trimToSpawn.position.z += dimensions.x / 2;
+                        }
+                    }
+                    app.scene.add(trimToSpawn);
+                    SpawnedWallTrims.push(trimToSpawn);
+                })
+            }
         }
     }
 
