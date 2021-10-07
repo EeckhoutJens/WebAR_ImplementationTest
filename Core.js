@@ -440,7 +440,7 @@ class App {
             .setPath('Textures/')
             .load('lebombo_1k.hdr', function (texture) {
                 var envmap = pmremGenerator.fromEquirectangular(texture).texture;
-                scene.environment = envmap;
+                //scene.environment = envmap;
                 texture.dispose();
                 pmremGenerator.dispose();
                 window.gltfLoader.setPath('3D/');
@@ -569,21 +569,33 @@ class App {
                     if (IsDirectionX)
                     {
                         if (direction.x < 0)
+                        {
                             trimToSpawn.rotateY(Math.PI);
+                            trimToSpawn.position.x -= dimensions.x / 2;
+                        }
+                        else
+                        {
+                            trimToSpawn.position.x += dimensions.x / 2;
+                        }
+
                     }
                     else
                     {
-                        if (HitPlaneDirection.z < 0)
-                            trimToSpawn.rotateY(Math.PI / 2);
-                        if (HitPlaneDirection.z > 0)
-                            trimToSpawn.rotateY(-Math.PI / 2);
+                        if (direction.z < 0)
+                        {
+                            trimToSpawn.rotateY(Math.PI / 2)
+                            trimToSpawn.position.z -= dimensions.x / 2;
+                        }
+                        if (direction.z > 0)
+                        {
+                            trimToSpawn.rotateY(-Math.PI / 2)
+                            trimToSpawn.position.z += dimensions.x / 2;
+                        }
                     }
                     app.scene.add(trimToSpawn);
                     SpawnedCeilingTrims.push(trimToSpawn);
                 })
             }
-
-
         }
     }
 
@@ -668,14 +680,28 @@ class App {
                     if (IsDirectionX)
                     {
                         if (direction.x < 0)
+                        {
                             trimToSpawn.rotateY(Math.PI);
+                            trimToSpawn.position.x -= dimensions.x / 2;
+                        }
+                        else
+                        {
+                            trimToSpawn.position.x += dimensions.x / 2;
+                        }
+
                     }
                     else
                     {
-                        if (HitPlaneDirection.z < 0)
-                            trimToSpawn.rotateY(Math.PI / 2);
-                        if (HitPlaneDirection.z > 0)
-                            trimToSpawn.rotateY(-Math.PI / 2);
+                        if (direction.z < 0)
+                        {
+                            trimToSpawn.rotateY(Math.PI / 2)
+                            trimToSpawn.position.z -= dimensions.x / 2;
+                        }
+                        if (direction.z > 0)
+                        {
+                            trimToSpawn.rotateY(-Math.PI / 2)
+                            trimToSpawn.position.z += dimensions.x / 2;
+                        }
                     }
                     app.scene.add(trimToSpawn);
                     SpawnedFloorTrims.push(trimToSpawn);
