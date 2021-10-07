@@ -371,7 +371,7 @@ class App {
 
         if (IsDeterminingHeight)
         {
-            this.CreateSphere(this.reticle.position);
+            Points.push(this.CreateSphere(this.reticle.position));
             if (Points.length === 2)
             {
                 ConstrainedYPos = Points[1].position.z;
