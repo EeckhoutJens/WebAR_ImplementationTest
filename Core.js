@@ -328,11 +328,11 @@ class App {
             {
                 let FirstLocation = new THREE.Vector3(0,0,0);
                 FirstLocation.copy(this.reticle.position);
-                FirstLocation.y = ConstrainedYPos;
+                FirstLocation.z = ConstrainedYPos;
                 this.CreateSphere(this.reticle.position);
                 let SecondLocation = new THREE.Vector3(0,0,0);
                 SecondLocation.copy(this.reticle.position);
-                SecondLocation.y = ConstrainedYPos - Height;
+                SecondLocation.z = ConstrainedYPos - Height;
                 this.CreateSphere(SecondLocation);
                 if (Points.length >= 4)
                 {
@@ -346,8 +346,8 @@ class App {
             this.CreateSphere(this.reticle.position);
             if (Points.length === 2)
             {
-                ConstrainedYPos = Points[1].position.y;
-                Height = Points[1].position.y - Points[0].position.y;
+                ConstrainedYPos = Points[1].position.z;
+                Height = Points[1].position.z - Points[0].position.z;
                 this.ResetPoints();
                 IsDeterminingHeight = false;
                 PlacingPoints = true;
@@ -433,11 +433,6 @@ class App {
 
     LoadModel(position, scene)
     {
-        if (SpawnedDecoration != null)
-        {
-            this.scene.remove(SpawnedDecoration);
-        }
-
         let inPlane = this.IsInPlane(this.reticle.position);
 
         new THREE.RGBELoader()
@@ -454,6 +449,10 @@ class App {
                     case DecorationTypes.Decoration:
                         if (!inPlane)
                             return;
+                        if (SpawnedDecoration != null)
+                        {
+                            app.scene.remove(SpawnedDecoration);
+                        }
 
                         window.gltfLoader.load(ModelID + ".gltf", function (gltf) {
                             SpawnedDecoration = gltf.scene;
@@ -736,7 +735,7 @@ class App {
             if (IsDirectionX)
             {
                 if (position.x <= highest.x && position.x >= lowest.x
-                    &&position.y <= highest.y && position.y >= lowest.y)
+                    &&position.z <= highest.z && position.z >= lowest.z)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
@@ -745,7 +744,7 @@ class App {
             else
             {
                 if (position.z <= highest.z && position.z >= lowest.z
-                    && position.y <= highest.y && position.y >= lowest.y)
+                    && position.x <= highest.x && position.x >= lowest.x)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
