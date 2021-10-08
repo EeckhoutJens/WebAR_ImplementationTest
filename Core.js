@@ -415,6 +415,7 @@ class App {
 
     /** Place a point when the screen is tapped.
      * Once 2 or more points have been placed create lines*/
+        //Ensure to change Z to Y when testing vertical planes
     onSelect = () =>
     {
         if (PlacingPoints)
@@ -650,15 +651,15 @@ class App {
                         break;
 
                     case DecorationTypes.CeilingTrim:
-                        app.GenerateCeilingTrims();
+                        app.GenerateCeilingTrims(ModelID);
                         break;
 
                     case DecorationTypes.FloorTrim:
-                        app.GenerateFloorTrims();
+                        app.GenerateFloorTrims(ModelID);
                         break;
 
                     case DecorationTypes.WallTrim:
-                        app.GenerateWallTrims();
+                        app.GenerateWallTrims(ModelID);
                         break;
 
                     case DecorationTypes.Set:
@@ -680,23 +681,23 @@ class App {
         //Iterate over IDs in SetIDs array and place correct type of object based on ID (C - SX - P)
         for(let i = 0; i < SetIDs.length; ++i)
         {
-            ModelID = SetIDs[i];
-            if (ModelID.startsWith("C"))
+            let currID = SetIDs[i];
+            if (currID.startsWith("C"))
             {
-                this.GenerateCeilingTrims();
+                this.GenerateCeilingTrims(currID);
             }
-            if (ModelID.startsWith("SX"))
+            if (currID.startsWith("SX"))
             {
-                this.GenerateFloorTrims();
+                this.GenerateFloorTrims(currID);
             }
-            if (ModelID.startsWith("P"))
+            if (currID.startsWith("P"))
             {
-                this.GenerateWallTrims();
+                this.GenerateWallTrims(currID);
             }
         }
     }
 
-    GenerateCeilingTrims()
+    GenerateCeilingTrims(ID)
     {
         this.ResetCeilingTrims();
         for(let currentPlane = 0; currentPlane < Planes.length; ++currentPlane)
@@ -716,7 +717,7 @@ class App {
             let nrToSpawn = 0;
 
             //Initial load so we can use data to calculate additional nr of meshes we still need to load after this
-            window.gltfLoader.load(ModelID + ".gltf", function (gltf)
+            window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
                 let trimToSpawn = gltf.scene;
                 trimToSpawn.traverse((child) => {
@@ -772,61 +773,61 @@ class App {
 
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawn;
-            })
 
-            //Now we load enough meshes to fill up top line of plane
-            for(let i = 1; i <= nrToSpawn; ++i)
-            {
-                window.gltfLoader.load(ModelID + ".gltf", function (gltf)
+                //Now we load enough meshes to fill up top line of plane
+                for(let i = 1; i <= nrToSpawn; ++i)
                 {
-                    let trimToSpawn = gltf.scene;
-                    trimToSpawn.traverse((child) => {
-                        if(child.isMesh)
-                            child.material.color = color;
-                    });
-                    trimToSpawn.position.copy(currentPoints[0]);
-                    trimToSpawn.position.add(positionOffset * i);
-                    if (IsDirectionX)
+                    window.gltfLoader.load(ID + ".gltf", function (gltf2)
                     {
-                        if (direction.x < 0)
+                        let trimToSpawn2 = gltf2.scene;
+                        trimToSpawn2.traverse((child) => {
+                            if(child.isMesh)
+                                child.material.color = color;
+                        });
+                        trimToSpawn2.position.copy(currentPoints[0]);
+                        trimToSpawn2.position.addScaledVector(positionOffset,i);
+                        if (IsDirectionX)
                         {
-                            trimToSpawn.rotateY(Math.PI);
-                            trimToSpawn.position.x -= dimensions.x / 2;
+                            if (direction.x < 0)
+                            {
+                                trimToSpawn2.rotateY(Math.PI);
+                                trimToSpawn2.position.x -= dimensions.x / 2;
+                            }
+                            else
+                            {
+                                trimToSpawn2.position.x += dimensions.x / 2;
+                            }
+
                         }
                         else
                         {
-                            trimToSpawn.position.x += dimensions.x / 2;
+                            if (direction.z < 0)
+                            {
+                                trimToSpawn2.rotateY(Math.PI / 2)
+                                trimToSpawn2.position.z -= dimensions.x / 2;
+                            }
+                            if (direction.z > 0)
+                            {
+                                trimToSpawn2.rotateY(-Math.PI / 2)
+                                trimToSpawn2.position.z += dimensions.x / 2;
+                            }
                         }
-
-                    }
-                    else
-                    {
-                        if (direction.z < 0)
+                        let XRTransform = new XRRigidTransform(trimToSpawn2.position, trimToSpawn2.orientation);
+                        reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
                         {
-                            trimToSpawn.rotateY(Math.PI / 2)
-                            trimToSpawn.position.z -= dimensions.x / 2;
-                        }
-                        if (direction.z > 0)
-                        {
-                            trimToSpawn.rotateY(-Math.PI / 2)
-                            trimToSpawn.position.z += dimensions.x / 2;
-                        }
-                    }
-                    let XRTransform = new XRRigidTransform(trimToSpawn.position, trimToSpawn.orientation);
-                    reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
-                    {
-                        SpawnedCeilingTrims.push({
-                            anchoredObject: trimToSpawn,
-                            anchor: anchor
+                            SpawnedCeilingTrims.push({
+                                anchoredObject: trimToSpawn2,
+                                anchor: anchor
+                            });
                         });
-                    });
-                    app.scene.add(trimToSpawn);
-                })
-            }
+                        app.scene.add(trimToSpawn2);
+                    })
+                }
+            })
         }
     }
 
-    GenerateFloorTrims()
+    GenerateFloorTrims(ID)
     {
         this.ResetFloorTrims();
         for(let currentPlane = 0; currentPlane < Planes.length; ++currentPlane)
@@ -846,7 +847,7 @@ class App {
             let nrToSpawn = 0;
 
             //Initial load so we can use data to calculate additional nr of meshes we still need to load after this
-            window.gltfLoader.load(ModelID + ".gltf", function (gltf)
+            window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
                 let trimToSpawn = gltf.scene;
                 trimToSpawn.traverse((child) => {
@@ -902,64 +903,62 @@ class App {
 
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawn;
-            })
 
-            //Now we load enough meshes to fill up bottom line of plane if necessary
-            for(let i = 1; i <= nrToSpawn; ++i)
-            {
-                window.gltfLoader.load(ModelID + ".gltf", function (gltf)
+                //Now we load enough meshes to fill up bottom line of plane if necessary
+                for(let i = 1; i <= nrToSpawn; ++i)
                 {
-                    let trimToSpawn = gltf.scene;
-                    trimToSpawn.traverse((child) => {
-                        if(child.isMesh)
-                            child.material.color = color;
-                    });
-                    trimToSpawn.position.copy(currentPoints[1]);
-                    trimToSpawn.position.add(positionOffset * i);
-                    if (IsDirectionX)
+                    window.gltfLoader.load(ID + ".gltf", function (gltf)
                     {
-                        if (direction.x < 0)
+                        let trimToSpawn2 = gltf.scene;
+                        trimToSpawn2.traverse((child) => {
+                            if(child.isMesh)
+                                child.material.color = color;
+                        });
+                        trimToSpawn2.position.copy(currentPoints[1]);
+                        trimToSpawn2.position.addScaledVector(positionOffset, i);
+                        if (IsDirectionX)
                         {
-                            trimToSpawn.rotateY(Math.PI);
-                            trimToSpawn.position.x -= dimensions.x / 2;
+                            if (direction.x < 0)
+                            {
+                                trimToSpawn2.rotateY(Math.PI);
+                                trimToSpawn2.position.x -= dimensions.x / 2;
+                            }
+                            else
+                            {
+                                trimToSpawn2.position.x += dimensions.x / 2;
+                            }
+
                         }
                         else
                         {
-                            trimToSpawn.position.x += dimensions.x / 2;
+                            if (direction.z < 0)
+                            {
+                                trimToSpawn2.rotateY(Math.PI / 2)
+                                trimToSpawn2.position.z -= dimensions.x / 2;
+                            }
+                            if (direction.z > 0)
+                            {
+                                trimToSpawn2.rotateY(-Math.PI / 2)
+                                trimToSpawn2.position.z += dimensions.x / 2;
+                            }
                         }
-
-                    }
-                    else
-                    {
-                        if (direction.z < 0)
+                        let XRTransform = new XRRigidTransform(trimToSpawn2.position, trimToSpawn2.orientation);
+                        reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
                         {
-                            trimToSpawn.rotateY(Math.PI / 2)
-                            trimToSpawn.position.z -= dimensions.x / 2;
-                        }
-                        if (direction.z > 0)
-                        {
-                            trimToSpawn.rotateY(-Math.PI / 2)
-                            trimToSpawn.position.z += dimensions.x / 2;
-                        }
-                    }
-                    let XRTransform = new XRRigidTransform(trimToSpawn.position, trimToSpawn.orientation);
-                    reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
-                    {
-                        SpawnedFloorTrims.push({
-                            anchoredObject: trimToSpawn,
-                            anchor: anchor
+                            SpawnedFloorTrims.push({
+                                anchoredObject: trimToSpawn2,
+                                anchor: anchor
+                            });
                         });
-                    });
-                    app.scene.add(trimToSpawn);
-                })
-            }
-
-
+                        app.scene.add(trimToSpawn2);
+                    })
+                }
+            })
         }
     }
 
     //Ensure to change Z to Y when testing vertical planes
-    GenerateWallTrims()
+    GenerateWallTrims(ID)
     {
         this.ResetWallTrims();
         for(let currentPlane = 0; currentPlane < Planes.length; ++currentPlane)
@@ -979,7 +978,7 @@ class App {
             let nrToSpawn = 0;
 
             //Initial load so we can use data to calculate additional nr of meshes we still need to load after this
-            window.gltfLoader.load(ModelID + ".gltf", function (gltf)
+            window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
                 let trimToSpawn = gltf.scene;
                 trimToSpawn.traverse((child) => {
@@ -1035,63 +1034,63 @@ class App {
 
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawn;
-            })
 
-            //Now we load enough meshes to fill up wall
-            for(let i = 1; i <= nrToSpawn; ++i)
-            {
-                window.gltfLoader.load(ModelID + ".gltf", function (gltf)
+                //Now we load enough meshes to fill up wall
+                for(let i = 1; i <= nrToSpawn; ++i)
                 {
-                    let trimToSpawn = gltf.scene;
-                    trimToSpawn.traverse((child) => {
-                        if(child.isMesh)
-                            child.material.color = color;
-                    });
-                    trimToSpawn.position.copy(currentPoints[0]);
-                    trimToSpawn.position.y = app.reticle.position.y;
-                    trimToSpawn.position.add(positionOffset * i);
-
-                    if (IsDirectionX)
+                    window.gltfLoader.load(ID + ".gltf", function (gltf2)
                     {
-                        if (direction.x < 0)
+                        let trimToSpawn2 = gltf2.scene;
+                        trimToSpawn2.traverse((child) => {
+                            if(child.isMesh)
+                                child.material.color = color;
+                        });
+                        trimToSpawn2.position.copy(currentPoints[0]);
+                        trimToSpawn2.position.z = app.reticle.position.z;
+                        trimToSpawn2.position.addScaledVector(positionOffset, i);
+
+                        if (IsDirectionX)
                         {
-                            trimToSpawn.rotateY(Math.PI);
-                            trimToSpawn.position.x -= dimensions.x / 2;
+                            if (direction.x < 0)
+                            {
+                                trimToSpawn2.rotateY(Math.PI);
+                                trimToSpawn2.position.x -= dimensions.x / 2;
+                            }
+                            else
+                            {
+                                trimToSpawn2.position.x += dimensions.x / 2;
+                            }
+
                         }
                         else
                         {
-                            trimToSpawn.position.x += dimensions.x / 2;
+                            if (direction.z < 0)
+                            {
+                                trimToSpawn2.rotateY(Math.PI / 2)
+                                trimToSpawn2.position.z -= dimensions.x / 2;
+                            }
+                            if (direction.z > 0)
+                            {
+                                trimToSpawn2.rotateY(-Math.PI / 2)
+                                trimToSpawn2.position.z += dimensions.x / 2;
+                            }
                         }
-
-                    }
-                    else
-                    {
-                        nrToSpawn = Math.floor(absDirection.z / dimensions.x);
-                        if (direction.z < 0)
+                        let XRTransform = new XRRigidTransform(trimToSpawn2.position, trimToSpawn2.orientation);
+                        reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
                         {
-                            trimToSpawn.rotateY(Math.PI / 2)
-                            trimToSpawn.position.z -= dimensions.x / 2;
-                        }
-                        if (direction.z > 0)
-                        {
-                            trimToSpawn.rotateY(-Math.PI / 2)
-                            trimToSpawn.position.z += dimensions.x / 2;
-                        }
-                    }
-                    let XRTransform = new XRRigidTransform(trimToSpawn.position, trimToSpawn.orientation);
-                    reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
-                    {
-                        SpawnedWallTrims.push({
-                            anchoredObject: trimToSpawn,
-                            anchor: anchor
+                            SpawnedWallTrims.push({
+                                anchoredObject: trimToSpawn2,
+                                anchor: anchor
+                            });
                         });
-                    });
-                    app.scene.add(trimToSpawn);
-                })
-            }
+                        app.scene.add(trimToSpawn2);
+                    })
+                }
+            })
         }
     }
 
+    //Ensure to change Z to Y when testing vertical planes
     IsInPlane(position)
     {
         var inside = false;
