@@ -90,6 +90,14 @@ function openSub5()
         document.getElementById("sub-menu-5").style.display = "none";
 }
 
+function openSub6()
+{
+    if (document.getElementById("sub-menu-6").style.display === "none")
+        document.getElementById("sub-menu-6").style.display = "block";
+    else
+        document.getElementById("sub-menu-6").style.display = "none";
+}
+
 class Reticle extends THREE.Object3D {
     constructor() {
         super();
@@ -127,7 +135,8 @@ const DecorationTypes =
         FloorTrim: "floorTrim",
         WallTrim: "wallTrim",
         Decoration: "decoration",
-        Set: "set"
+        Set: "set",
+        FillDecoration: "fillDecoration"
     }
 
     let decoType = DecorationTypes.Decoration;
