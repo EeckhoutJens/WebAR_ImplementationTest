@@ -365,7 +365,7 @@ class App {
         // for the shadow.
         const light = new THREE.AmbientLight(0x222222);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-        directionalLight.position.set(0, 1, 0).normalize();
+        directionalLight.position.set(0, 1, 0.75).normalize();
 
         // We want this light to cast shadow.
         directionalLight.castShadow = true;
@@ -610,7 +610,7 @@ class App {
             .setPath('Textures/')
             .load('lebombo_1k.hdr', function (texture) {
                 var envmap = pmremGenerator.fromEquirectangular(texture).texture;
-                //scene.environment = envmap;
+                scene.environment = envmap;
                 texture.dispose();
                 pmremGenerator.dispose();
                 window.gltfLoader.setPath('3D/');
@@ -621,10 +621,16 @@ class App {
                             return;
 
                         window.gltfLoader.load(ModelID + ".gltf", function (gltf) {
-                            let decoration = gltf.scene;
-                            decoration.traverse((child) => {
+                            let loadedScene = gltf.scene;
+                            let decoration;
+
+                            //scenes were exported with lighting so make sure to only add mesh to the scene
+                            loadedScene.traverse((child) => {
                                 if(child.isMesh)
+                                {
                                     child.material.color = color;
+                                    decoration = child.parent;
+                                }
                             });
 
                             decoration.position.copy(position);
@@ -719,10 +725,14 @@ class App {
             //Initial load so we can use data to calculate additional nr of meshes we still need to load after this
             window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
-                let trimToSpawn = gltf.scene;
-                trimToSpawn.traverse((child) => {
+                let loadedScene = gltf.scene;
+                let trimToSpawn;
+                loadedScene.traverse((child) => {
                     if(child.isMesh)
+                    {
                         child.material.color = color;
+                        trimToSpawn = child.parent;
+                    }
                 });
                 trimToSpawn.position.copy(currentPoints[0]);
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
@@ -779,10 +789,14 @@ class App {
                 {
                     window.gltfLoader.load(ID + ".gltf", function (gltf2)
                     {
-                        let trimToSpawn2 = gltf2.scene;
-                        trimToSpawn2.traverse((child) => {
+                        let loadedScene = gltf2.scene;
+                        let trimToSpawn2;
+                        loadedScene.traverse((child) => {
                             if(child.isMesh)
+                            {
                                 child.material.color = color;
+                                trimToSpawn2 = child.parent;
+                            }
                         });
                         trimToSpawn2.position.copy(currentPoints[0]);
                         trimToSpawn2.position.addScaledVector(positionOffset,i);
@@ -849,10 +863,14 @@ class App {
             //Initial load so we can use data to calculate additional nr of meshes we still need to load after this
             window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
-                let trimToSpawn = gltf.scene;
-                trimToSpawn.traverse((child) => {
+                let loadedScene = gltf.scene;
+                let trimToSpawn;
+                loadedScene.traverse((child) => {
                     if(child.isMesh)
+                    {
                         child.material.color = color;
+                        trimToSpawn = child.parent;
+                    }
                 });
                 trimToSpawn.position.copy(currentPoints[1]);
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
@@ -909,10 +927,14 @@ class App {
                 {
                     window.gltfLoader.load(ID + ".gltf", function (gltf)
                     {
-                        let trimToSpawn2 = gltf.scene;
-                        trimToSpawn2.traverse((child) => {
+                        let loadedScene = gltf.scene;
+                        let trimToSpawn2;
+                        loadedScene.traverse((child) => {
                             if(child.isMesh)
+                            {
                                 child.material.color = color;
+                                trimToSpawn2 = child.parent;
+                            }
                         });
                         trimToSpawn2.position.copy(currentPoints[1]);
                         trimToSpawn2.position.addScaledVector(positionOffset, i);
@@ -980,10 +1002,15 @@ class App {
             //Initial load so we can use data to calculate additional nr of meshes we still need to load after this
             window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
-                let trimToSpawn = gltf.scene;
-                trimToSpawn.traverse((child) => {
+                let loadedScene = gltf.scene;
+                let trimToSpawn;
+                loadedScene.traverse((child) => {
                     if(child.isMesh)
+                    {
                         child.material.color = color;
+                        trimToSpawn = child.parent;
+                    }
+
                 });
                 trimToSpawn.position.copy(currentPoints[0]);
                 trimToSpawn.position.z = app.reticle.position.z;
@@ -1040,10 +1067,15 @@ class App {
                 {
                     window.gltfLoader.load(ID + ".gltf", function (gltf2)
                     {
-                        let trimToSpawn2 = gltf2.scene;
-                        trimToSpawn2.traverse((child) => {
+                        let loadedScene = gltf2.scene;
+                        let trimToSpawn2;
+                        loadedScene.traverse((child) => {
                             if(child.isMesh)
+                            {
                                 child.material.color = color;
+                                trimToSpawn2 = child.parent;
+                            }
+
                         });
                         trimToSpawn2.position.copy(currentPoints[0]);
                         trimToSpawn2.position.z = app.reticle.position.z;

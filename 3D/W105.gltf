@@ -7,58 +7,25 @@
     {
       "name": "Scene",
       "nodes": [
-        0,
-        1,
-        2,
-        4
+        1
       ]
     }
   ],
   "scene": 0,
   "nodes": [
-    {},
-    {
-      "name": "AmbientLight"
-    },
     {
       "matrix": [
-        1,
+        0.001,
         0,
         0,
         0,
         0,
-        1,
+        0.001,
         0,
         0,
         0,
         0,
-        1,
-        0,
-        5,
-        25.750763651051244,
-        23.822906668201753,
-        1
-      ],
-      "name": "DirectionalLight",
-      "extensions": {
-        "KHR_lights_punctual": {
-          "light": 0
-        }
-      }
-    },
-    {
-      "matrix": [
-        0.013,
-        0,
-        0,
-        0,
-        0,
-        0.013,
-        0,
-        0,
-        0,
-        0,
-        0.013,
+        0.001,
         0,
         0,
         0,
@@ -69,46 +36,12 @@
       "mesh": 0
     },
     {
-      "matrix": [
-        0.1,
-        0,
-        0,
-        0,
-        0,
-        0.1,
-        0,
-        0,
-        0,
-        0,
-        0.1,
-        0,
-        0,
-        0,
-        0,
-        1
-      ],
       "name": "W105.obj",
       "children": [
-        3
+        0
       ]
     }
   ],
-  "extensions": {
-    "KHR_lights_punctual": {
-      "lights": [
-        {
-          "name": "DirectionalLight",
-          "color": [
-            1,
-            1,
-            1
-          ],
-          "intensity": 1,
-          "type": "directional"
-        }
-      ]
-    }
-  },
   "bufferViews": [
     {
       "buffer": 0,
@@ -209,8 +142,5 @@
         }
       ]
     }
-  ],
-  "extensionsUsed": [
-    "KHR_lights_punctual"
   ]
 }
