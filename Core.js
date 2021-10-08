@@ -46,56 +46,13 @@ function closeNav() {
     document.getElementsByTagName("button")[0].style.display = "block";
 }
 
-function openSub1()
+function openSub(id)
 {
-    if (document.getElementById("sub-menu-1").style.display === "none")
-        document.getElementById("sub-menu-1").style.display = "block";
+    if (document.getElementById(id).style.display === "none")
+        document.getElementById(id).style.display = "block";
     else
-        document.getElementById("sub-menu-1").style.display = "none";
+        document.getElementById(id).style.display = "none";
 
-}
-
-function openSub2()
-{
-    if (document.getElementById("sub-menu-2").style.display === "none")
-        document.getElementById("sub-menu-2").style.display = "block";
-    else
-        document.getElementById("sub-menu-2").style.display = "none";
-
-}
-
-function openSub3()
-{
-    if (document.getElementById("sub-menu-3").style.display === "none")
-        document.getElementById("sub-menu-3").style.display = "block";
-    else
-        document.getElementById("sub-menu-3").style.display = "none";
-
-}
-
-function openSub4()
-{
-    if (document.getElementById("sub-menu-4").style.display === "none")
-        document.getElementById("sub-menu-4").style.display = "block";
-    else
-        document.getElementById("sub-menu-4").style.display = "none";
-
-}
-
-function openSub5()
-{
-    if (document.getElementById("sub-menu-5").style.display === "none")
-        document.getElementById("sub-menu-5").style.display = "block";
-    else
-        document.getElementById("sub-menu-5").style.display = "none";
-}
-
-function openSub6()
-{
-    if (document.getElementById("sub-menu-6").style.display === "none")
-        document.getElementById("sub-menu-6").style.display = "block";
-    else
-        document.getElementById("sub-menu-6").style.display = "none";
 }
 
 class Reticle extends THREE.Object3D {
