@@ -11,14 +11,39 @@ function SetModelID(id, type)
         decoType = DecorationTypes.WallTrim;
     if (type === "decoration")
         decoType = DecorationTypes.Decoration;
+    if (type === "set")
+    {
+        decoType = DecorationTypes.Set;
+        if (id === "test")
+            setType = SetTypes.Test;
+        assignSetIDs();
+    }
+
+}
+
+function assignSetIDs()
+{
+    SetIDs.length = 0;
+    switch (setType)
+    {
+        case SetTypes.Test:
+            SetIDs.push("C341");
+            SetIDs.push("SX118");
+            SetIDs.push("P4020");
+            break;
+    }
 }
 
 function openNav() {
     document.getElementById("mySidenav").style.width = "250px";
+    gui.hide();
+    document.getElementsByTagName("button")[0].style.display = "none";
 }
 
 function closeNav() {
     document.getElementById("mySidenav").style.width = "0";
+    gui.show();
+    document.getElementsByTagName("button")[0].style.display = "block";
 }
 
 function openSub1()
@@ -57,6 +82,14 @@ function openSub4()
 
 }
 
+function openSub5()
+{
+    if (document.getElementById("sub-menu-5").style.display === "none")
+        document.getElementById("sub-menu-5").style.display = "block";
+    else
+        document.getElementById("sub-menu-5").style.display = "none";
+}
+
 class Reticle extends THREE.Object3D {
     constructor() {
         super();
@@ -87,15 +120,25 @@ const Planes = [];
 const SpawnedCeilingTrims = [];
 const SpawnedFloorTrims = [];
 const SpawnedWallTrims = [];
+const SetIDs = [];
 const DecorationTypes =
     {
         CeilingTrim: "ceilingTrim",
         FloorTrim: "floorTrim",
         WallTrim: "wallTrim",
         Decoration: "decoration",
+        Set: "set"
     }
 
     let decoType = DecorationTypes.Decoration;
+
+
+const SetTypes =
+    {
+        Test: "test"
+    }
+
+    let setType = SetTypes.Test;
 
 let reticleHitTestResult;
 //PLANE DETECTION
@@ -105,7 +148,7 @@ let Height = 0;
 //Ensures all the dots are placed on the same Y position
 let ConstrainedYPos = 0;
 
-//Second step, place points in the top corners of adjacent wall
+//Second step, place points in the top left corner of adjacent wall
 let PlacingPoints = false;
 const MinDistance = 0.2;
 let NrOfPlanes = 0;
@@ -121,7 +164,7 @@ let IsDirectionX = false;
 let CurrentFrame;
 let pmremGenerator;
 let gui;
-let params = {color: "#1861b3" };
+let params = {color: "#919197" };
 let color;
 
 //Container class to handle WebXR logic
@@ -391,7 +434,12 @@ class App {
 
                     //Set up colorPicker
                     gui = new dat.GUI();
-                    gui.addColor(params, 'color').onChange(this.UpdateColor());
+
+                    //Manually call update so color variable gets properly initalized with the default value of the picker
+                    this.UpdateColor();
+
+                    //Set a callback so that whenever the value of the picker changes, it calls the update
+                    gui.addColor(params, 'color').onChange(this.UpdateColor);
                     break;
                 }
             }
@@ -399,7 +447,7 @@ class App {
             {
                 let FirstLocation = new THREE.Vector3(0,0,0);
                 FirstLocation.copy(this.reticle.position);
-                FirstLocation.y = ConstrainedYPos;
+                FirstLocation.z = ConstrainedYPos;
                 let Point1 = this.CreateSphere(FirstLocation)
 
                 reticleHitTestResult.createAnchor().then((anchor) =>
@@ -417,12 +465,12 @@ class App {
 
                 let SecondLocation = new THREE.Vector3(0,0,0);
                 SecondLocation.copy(FirstLocation);
-                SecondLocation.y = ConstrainedYPos - Height;
+                SecondLocation.z = ConstrainedYPos - Height;
                 let Point2 = this.CreateSphere(SecondLocation);
                 let hitPose = reticleHitTestResult.getPose(this.localReferenceSpace);
                 let transformPosition = new THREE.Vector3(0,0,0);
                 transformPosition.copy(hitPose.transform.position);
-                transformPosition.y = ConstrainedYPos - Height;
+                transformPosition.z = ConstrainedYPos - Height;
                 let XRTransform = new XRRigidTransform(transformPosition, hitPose.transform.orientation);
 
                 reticleHitTestResult.createAnchor(XRTransform, this.localReferenceSpace).then((anchor) =>
@@ -453,8 +501,8 @@ class App {
 
                 if (Points.length === 2)
                 {
-                    ConstrainedYPos = Points[1].anchoredObject.position.y;
-                    Height = ConstrainedYPos - Points[0].anchoredObject.position.y;
+                    ConstrainedYPos = Points[1].anchoredObject.position.z;
+                    Height = ConstrainedYPos - Points[0].anchoredObject.position.z;
                     this.ResetPoints();
                     IsDeterminingHeight = false;
                     PlacingPoints = true;
@@ -573,6 +621,10 @@ class App {
 
                         window.gltfLoader.load(ModelID + ".gltf", function (gltf) {
                             let decoration = gltf.scene;
+                            decoration.traverse((child) => {
+                                if(child.isMesh)
+                                    child.material.color = color;
+                            });
 
                             decoration.position.copy(position);
                             if (IsDirectionX) {
@@ -608,10 +660,40 @@ class App {
                     case DecorationTypes.WallTrim:
                         app.GenerateWallTrims();
                         break;
+
+                    case DecorationTypes.Set:
+                        app.PlaceSet();
+
                     //const shadowMesh = scene.children.find(c => c.name === 'shadowMesh');
                     //shadowMesh.position.y = SpawnedDecoration.position.y
                 }
             });
+    }
+
+    PlaceSet()
+    {
+        //Clear previously placed trims
+        app.ResetCeilingTrims();
+        app.ResetWallTrims();
+        app.ResetFloorTrims()
+
+        //Iterate over IDs in SetIDs array and place correct type of object based on ID (C - SX - P)
+        for(let i = 0; i < SetIDs.length; ++i)
+        {
+            ModelID = SetIDs[i];
+            if (ModelID.startsWith("C"))
+            {
+                this.GenerateCeilingTrims();
+            }
+            if (ModelID.startsWith("SX"))
+            {
+                this.GenerateFloorTrims();
+            }
+            if (ModelID.startsWith("P"))
+            {
+                this.GenerateWallTrims();
+            }
+        }
     }
 
     GenerateCeilingTrims()
@@ -637,6 +719,10 @@ class App {
             window.gltfLoader.load(ModelID + ".gltf", function (gltf)
             {
                 let trimToSpawn = gltf.scene;
+                trimToSpawn.traverse((child) => {
+                    if(child.isMesh)
+                        child.material.color = color;
+                });
                 trimToSpawn.position.copy(currentPoints[0]);
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
                 let dimensions = new THREE.Vector3(0,0,0);
@@ -644,7 +730,7 @@ class App {
 
                 if (IsDirectionX)
                 {
-                    nrToSpawn = Math.floor(absDirection.x / dimensions.x);
+                    nrToSpawn = Math.round(absDirection.x / dimensions.x);
                     if (direction.x < 0)
                     {
                         trimToSpawn.rotateY(Math.PI);
@@ -660,7 +746,7 @@ class App {
                 }
                 else
                 {
-                    nrToSpawn = Math.floor(absDirection.z / dimensions.x);
+                    nrToSpawn = Math.round(absDirection.z / dimensions.x);
                     if (direction.z < 0)
                     {
                         trimToSpawn.rotateY(Math.PI / 2)
@@ -694,6 +780,10 @@ class App {
                 window.gltfLoader.load(ModelID + ".gltf", function (gltf)
                 {
                     let trimToSpawn = gltf.scene;
+                    trimToSpawn.traverse((child) => {
+                        if(child.isMesh)
+                            child.material.color = color;
+                    });
                     trimToSpawn.position.copy(currentPoints[0]);
                     trimToSpawn.position.add(positionOffset * i);
                     if (IsDirectionX)
@@ -759,6 +849,10 @@ class App {
             window.gltfLoader.load(ModelID + ".gltf", function (gltf)
             {
                 let trimToSpawn = gltf.scene;
+                trimToSpawn.traverse((child) => {
+                    if(child.isMesh)
+                        child.material.color = color;
+                });
                 trimToSpawn.position.copy(currentPoints[1]);
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
                 let dimensions = new THREE.Vector3(0,0,0);
@@ -766,7 +860,7 @@ class App {
 
                 if (IsDirectionX)
                 {
-                    nrToSpawn = Math.floor(absDirection.x / dimensions.x);
+                    nrToSpawn = Math.round(absDirection.x / dimensions.x);
                     if (direction.x < 0)
                     {
                         trimToSpawn.rotateY(Math.PI);
@@ -782,7 +876,7 @@ class App {
                 }
                 else
                 {
-                    nrToSpawn = Math.floor(absDirection.z / dimensions.x);
+                    nrToSpawn = Math.round(absDirection.z / dimensions.x);
                     if (direction.z < 0)
                     {
                         trimToSpawn.rotateY(Math.PI / 2)
@@ -816,6 +910,10 @@ class App {
                 window.gltfLoader.load(ModelID + ".gltf", function (gltf)
                 {
                     let trimToSpawn = gltf.scene;
+                    trimToSpawn.traverse((child) => {
+                        if(child.isMesh)
+                            child.material.color = color;
+                    });
                     trimToSpawn.position.copy(currentPoints[1]);
                     trimToSpawn.position.add(positionOffset * i);
                     if (IsDirectionX)
@@ -884,14 +982,18 @@ class App {
             window.gltfLoader.load(ModelID + ".gltf", function (gltf)
             {
                 let trimToSpawn = gltf.scene;
+                trimToSpawn.traverse((child) => {
+                    if(child.isMesh)
+                        child.material.color = color;
+                });
                 trimToSpawn.position.copy(currentPoints[0]);
-                trimToSpawn.position.y = app.reticle.position.y;
+                trimToSpawn.position.z = app.reticle.position.z;
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
                 let dimensions = new THREE.Vector3(0,0,0);
                 box.getSize(dimensions);
                 if (IsDirectionX)
                 {
-                    nrToSpawn = Math.floor(absDirection.x / dimensions.x);
+                    nrToSpawn = Math.round(absDirection.x / dimensions.x);
                     if (direction.x < 0)
                     {
                         trimToSpawn.rotateY(Math.PI);
@@ -907,7 +1009,7 @@ class App {
                 }
                 else
                 {
-                    nrToSpawn = Math.floor(absDirection.z / dimensions.x);
+                    nrToSpawn = Math.round(absDirection.z / dimensions.x);
                     if (direction.z < 0)
                     {
                         trimToSpawn.rotateY(Math.PI / 2)
@@ -941,6 +1043,10 @@ class App {
                 window.gltfLoader.load(ModelID + ".gltf", function (gltf)
                 {
                     let trimToSpawn = gltf.scene;
+                    trimToSpawn.traverse((child) => {
+                        if(child.isMesh)
+                            child.material.color = color;
+                    });
                     trimToSpawn.position.copy(currentPoints[0]);
                     trimToSpawn.position.y = app.reticle.position.y;
                     trimToSpawn.position.add(positionOffset * i);
@@ -1032,7 +1138,7 @@ class App {
             if (IsDirectionX)
             {
                 if (position.x <= highest.x && position.x >= lowest.x
-                    &&position.y <= highest.y && position.y >= lowest.y)
+                    &&position.z <= highest.z && position.z >= lowest.z)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
@@ -1041,7 +1147,7 @@ class App {
             else
             {
                 if (position.z <= highest.z && position.z >= lowest.z
-                    && position.y <= highest.y && position.y >= lowest.y)
+                    && position.x <= highest.x && position.x >= lowest.x)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
