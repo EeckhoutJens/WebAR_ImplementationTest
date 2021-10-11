@@ -434,6 +434,24 @@ class App {
     UpdateTrimColor()
     {
         trimColor = new THREE.Color(params.trimColor);
+        for(let currTrim = 0; currTrim < SpawnedCeilingTrims.length; ++currTrim)
+        {
+        SpawnedCeilingTrims[currTrim].anchoredObject.traverse((child) => {
+            if (child.isMesh)
+            {
+                child.material.color.set(trimColor);
+            }
+            })
+        }
+
+        for(let currTrim = 0; currTrim < SpawnedFloorTrims.length; ++currTrim)
+        {
+            SpawnedFloorTrims[currTrim].anchoredObject.traverse((child) => {
+                if (child.isMesh) {
+                    child.material.color.set(trimColor);
+                }
+            })
+        }
     }
 
     UpdateDecorationColor()
