@@ -1081,7 +1081,6 @@ class App {
                 box.getSize(dimensions);
                 currentPos.y -= dimensions.y;
                 trimToSpawn.position.copy(currentPos);
-                trimToSpawn.rotateX(-Math.PI / 2);
 
                 nrToSpawnY = Math.round(YDistance / dimensions.y);
                 if (IsX)
@@ -1159,7 +1158,6 @@ class App {
                                 }
                             });
                             trimToSpawn2.position.copy(currentPos);
-                            trimToSpawn2.rotateX(-Math.PI / 2);
                             if (currY === 0 && currX === 0 )
                             {
                                 ++currX;
