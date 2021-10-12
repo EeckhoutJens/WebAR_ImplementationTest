@@ -457,6 +457,15 @@ class App {
     UpdateDecorationColor()
     {
         decorationColor = new THREE.Color(params2.decorationColor);
+        for(let currTrim = 0; currTrim < SpawnedDecorations.length; ++currTrim)
+        {
+            SpawnedDecorations[currTrim].anchoredObject.traverse((child) => {
+                if (child.isMesh)
+                {
+                    child.material.color.set(decorationColor);
+                }
+            })
+        }
     }
 
     /** Place a point when the screen is tapped.
@@ -843,12 +852,14 @@ class App {
                                 anchoredObject: trimToSpawn,
                                 anchor: anchor
                             });
+                            break;
 
                         case DecorationTypes.Decoration:
                             SpawnedDecorations.push({
                                 anchoredObject: trimToSpawn,
                                 anchor: anchor
                             });
+                            break
                     }
                     });
 
@@ -944,12 +955,14 @@ class App {
                                         anchoredObject: trimToSpawn,
                                         anchor: anchor
                                     });
+                                    break
 
                                 case DecorationTypes.Decoration:
                                     SpawnedDecorations.push({
                                         anchoredObject: trimToSpawn,
                                         anchor: anchor
                                     });
+                                    break
                             }
                         });
 
