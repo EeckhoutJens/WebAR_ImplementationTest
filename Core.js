@@ -188,7 +188,7 @@ class App {
             document.getElementById("sub-menu-6").style.display = "none";
     }
 
-    ScaleToLength(startPos, object, length, dimensions,clipNormal)
+    ClipToLength(startPos, object, length, clipNormal)
     {
         let clippingPlane = [new THREE.Plane(clipNormal, startPos.x + length)];
         this.scene.add(new THREE.PlaneHelper(clippingPlane[0], 1, 0xff0000 ));
@@ -205,21 +205,7 @@ class App {
                 child.material = material;
         }
     })
-
-
-        /**let currentScale = object.scale;
-        currentScale.x = length * currentScale.x / dimensions.x;
-        object.scale.set(currentScale.x,currentScale.y,currentScale.z);
-
-        let box = new THREE.Box3().setFromObject(object);
-        box.getSize(dimensions);*/
     }
-
-    PrintSomething()
-    {
-        console.log("Session started");
-    }
-
     /**
      * Run when the Start AR button is pressed.
      */
@@ -564,7 +550,7 @@ class App {
             {
                 let FirstLocation = new THREE.Vector3(0,0,0);
                 FirstLocation.copy(this.reticle.position);
-                FirstLocation.z = ConstrainedYPos;
+                FirstLocation.y = ConstrainedYPos;
                 let Point1 = this.CreateSphere(FirstLocation)
 
                 reticleHitTestResult.createAnchor().then((anchor) =>
@@ -573,21 +559,16 @@ class App {
                         anchoredObject: Point1,
                         anchor: anchor
                     });
-
-                    if (Points.length >= 4)
-                    {
-                        ++NrOfPlanes;
-                    }
                 });
 
                 let SecondLocation = new THREE.Vector3(0,0,0);
                 SecondLocation.copy(FirstLocation);
-                SecondLocation.z = ConstrainedYPos - Height;
+                SecondLocation.y = ConstrainedYPos - Height;
                 let Point2 = this.CreateSphere(SecondLocation);
                 let hitPose = reticleHitTestResult.getPose(this.localReferenceSpace);
                 let transformPosition = new THREE.Vector3(0,0,0);
                 transformPosition.copy(hitPose.transform.position);
-                transformPosition.z = ConstrainedYPos - Height;
+                transformPosition.y = ConstrainedYPos - Height;
                 let XRTransform = new XRRigidTransform(transformPosition, hitPose.transform.orientation);
 
                 reticleHitTestResult.createAnchor(XRTransform, this.localReferenceSpace).then((anchor) =>
@@ -618,8 +599,8 @@ class App {
 
                 if (Points.length === 2)
                 {
-                    ConstrainedYPos = Points[1].anchoredObject.position.z;
-                    Height = ConstrainedYPos - Points[0].anchoredObject.position.z;
+                    ConstrainedYPos = Points[1].anchoredObject.position.y;
+                    Height = ConstrainedYPos - Points[0].anchoredObject.position.y;
                     this.ResetPoints();
                     IsDeterminingHeight = false;
                     PlacingPoints = true;
@@ -937,7 +918,7 @@ class App {
 
                 if (nrToSpawn <= 0)
                 {
-                    app.ScaleToLength(StartPosition,trimToSpawn ,length,dimensions,clipNormal);
+                    app.ClipToLength(StartPosition,trimToSpawn ,length,clipNormal);
                 }
 
                 if (IsX)
@@ -1037,7 +1018,7 @@ class App {
 
                         if (i === nrToSpawn)
                         {
-                            app.ScaleToLength(StartPosition, trimToSpawn2,length,dimensions,clipNormal);
+                            app.ClipToLength(StartPosition, trimToSpawn2,length,clipNormal);
                         }
 
                         app.scene.add(trimToSpawn2);
@@ -1081,7 +1062,7 @@ class App {
             Up.copy(currentPoints[1]);
             Up.sub(currentPoints[0]);
 
-            let YDistance = Math.abs(Up.z);
+            let YDistance = Math.abs(Up.y);
 
             window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
@@ -1098,7 +1079,7 @@ class App {
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
                 let dimensions = new THREE.Vector3(0, 0, 0);
                 box.getSize(dimensions);
-                currentPos.z += dimensions.y;
+                currentPos.y -= dimensions.y;
                 trimToSpawn.position.copy(currentPos);
                 trimToSpawn.rotateX(-Math.PI / 2);
 
@@ -1155,7 +1136,7 @@ class App {
                 else
                     trimToSpawn.position.z += dimensions.x / 2;
 
-                trimToSpawn.position.z += dimensions.y / 2;
+                trimToSpawn.position.y += dimensions.y / 2;
 
                 app.scene.add(trimToSpawn);
 
@@ -1185,8 +1166,8 @@ class App {
                             }
                             trimToSpawn2.position.addScaledVector(positionOffset,currX);
 
-                            trimToSpawn2.position.z += dimensions.y / 2;
-                            trimToSpawn2.position.z += dimensions.y * currY;
+                            trimToSpawn2.position.y += dimensions.y / 2;
+                            trimToSpawn2.position.y += dimensions.y * currY;
                             if (IsX)
                             {
                                 if (direction.x < 0)
@@ -1297,7 +1278,7 @@ class App {
             let IsX = absDirection.x > absDirection.z;
             let startPoint = new THREE.Vector3(0,0,0);
             startPoint.copy(currentPoints[0]);
-            startPoint.z = this.reticle.position.z;
+            startPoint.y = this.reticle.position.y;
 
             this.GenerateTrims(ID, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
         }
@@ -1350,7 +1331,7 @@ class App {
             if (IsDirectionX)
             {
                 if (position.x <= highest.x && position.x >= lowest.x
-                    &&position.z <= highest.z && position.z >= lowest.z)
+                    &&position.y <= highest.y && position.y >= lowest.y)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
@@ -1359,7 +1340,7 @@ class App {
             else
             {
                 if (position.z <= highest.z && position.z >= lowest.z
-                    && position.x <= highest.x && position.x >= lowest.x)
+                    && position.y <= highest.y && position.y >= lowest.y)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
