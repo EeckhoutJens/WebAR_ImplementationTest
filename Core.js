@@ -188,14 +188,31 @@ class App {
             document.getElementById("sub-menu-6").style.display = "none";
     }
 
-    ScaleToLength(object, length, dimensions)
+    ScaleToLength(startPos, object, length, dimensions,clipNormal)
     {
-        let currentScale = object.scale;
+        let clippingPlane = [new THREE.Plane(clipNormal, startPos.x + length)];
+        this.scene.add(new THREE.PlaneHelper(clippingPlane[0], 1, 0xff0000 ));
+
+        const material = new THREE.MeshLambertMaterial({
+            color: trimColor,
+            clippingPlanes: clippingPlane,
+            clipIntersection: true
+        })
+
+        object.traverse((child) => {
+            if(child.isMesh)
+            {
+                child.material = material;
+        }
+    })
+
+
+        /**let currentScale = object.scale;
         currentScale.x = length * currentScale.x / dimensions.x;
         object.scale.set(currentScale.x,currentScale.y,currentScale.z);
 
         let box = new THREE.Box3().setFromObject(object);
-        box.getSize(dimensions);
+        box.getSize(dimensions);*/
     }
 
     PrintSomething()
@@ -391,6 +408,7 @@ class App {
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.outputEncoding = THREE.sRGBEncoding;
+        this.renderer.localClippingEnabled = true;
         this.renderer.physicallyCorrectLights = true;
         this.renderer.xr = this.xrSession;
         this.renderer.xr.enabled = true;
@@ -819,6 +837,18 @@ class App {
             let positionOffset = new THREE.Vector3(0,0,0);
             let nrToSpawn = 0;
             let length;
+            let clipNormal;
+            if (IsX)
+            {
+                if (direction.x > 0)
+                {
+                    clipNormal = new THREE.Vector3(-1,0,0);
+                }
+                else
+                {
+                    clipNormal = new THREE.Vector3(1,0,0);
+                }
+            }
 
             //Initial load so we can use data to calculate additional nr of meshes we still need to load after this
             window.gltfLoader.load(ID + ".gltf", function (gltf)
@@ -828,7 +858,6 @@ class App {
                 loadedScene.traverse((child) => {
                     if(child.isMesh)
                     {
-                        child.material.color = trimColor;
                         trimToSpawn = child.parent;
                     }
                 });
@@ -839,7 +868,7 @@ class App {
 
                 if (IsX)
                 {
-                    nrToSpawn = Math.round(absDirection.x / dimensions.x);
+                    nrToSpawn = Math.ceil(absDirection.x / dimensions.x);
                     length = absDirection.x;
                     if (direction.x < 0)
                     {
@@ -854,7 +883,7 @@ class App {
                 }
                 else
                 {
-                    nrToSpawn = Math.round(absDirection.z / dimensions.x);
+                    nrToSpawn = Math.ceil(absDirection.z / dimensions.x);
                     length = absDirection.z;
                     if (direction.z < 0)
                     {
@@ -908,7 +937,7 @@ class App {
 
                 if (nrToSpawn <= 0)
                 {
-                    app.ScaleToLength(trimToSpawn,length,dimensions);
+                    app.ScaleToLength(StartPosition,trimToSpawn ,length,dimensions,clipNormal);
                 }
 
                 if (IsX)
@@ -1008,8 +1037,7 @@ class App {
 
                         if (i === nrToSpawn)
                         {
-                            length /= (nrToSpawn + 1);
-                            app.ScaleToLength(trimToSpawn2,length,dimensions);
+                            app.ScaleToLength(StartPosition, trimToSpawn2,length,dimensions,clipNormal);
                         }
 
                         app.scene.add(trimToSpawn2);
@@ -1031,6 +1059,14 @@ class App {
             let currentPos = new THREE.Vector3(0, 0, 0);
             currentPos.copy(currentPoints[0]);
 
+            //In case trims are present - make sure decorations spawn in between the trims
+            if (SpawnedCeilingTrims.length !== 0)
+            {
+                let trimBox = new THREE.Box3().setFromObject(SpawnedCeilingTrims[0].anchoredObject);
+                let trimdimensions = new THREE.Vector3(0, 0, 0);
+                trimBox.getSize(trimdimensions);
+            }
+
             //Check direction of plane
             let direction = this.CalculatePlaneDirection(currentPoints);
             let absDirection = new THREE.Vector3(0, 0, 0);
@@ -1045,6 +1081,8 @@ class App {
             Up.copy(currentPoints[1]);
             Up.sub(currentPoints[0]);
 
+            let YDistance = Math.abs(Up.z);
+
             window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
                 let loadedScene = gltf.scene;
@@ -1057,13 +1095,14 @@ class App {
                         trimToSpawn = child.parent;
                     }
                 });
-                trimToSpawn.position.copy(currentPoints[0]);
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
                 let dimensions = new THREE.Vector3(0, 0, 0);
                 box.getSize(dimensions);
+                currentPos.z += dimensions.y;
+                trimToSpawn.position.copy(currentPos);
                 trimToSpawn.rotateX(-Math.PI / 2);
 
-                nrToSpawnY = Math.round(Math.abs(Up.z) / dimensions.y);
+                nrToSpawnY = Math.round(YDistance / dimensions.y);
                 if (IsX)
                 {
                     nrToSpawnX = Math.round(absDirection.x / dimensions.x);
@@ -1104,6 +1143,7 @@ class App {
 
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawnX;
+                --nrToSpawnY;
 
                 /**if (nrToSpawnX === 0)
                 {
@@ -1124,7 +1164,7 @@ class App {
 
                 for(let currY = 0; currY < nrToSpawnY; ++currY)
                 {
-                    for(let currX = 0; currX < nrToSpawnX; ++currX)
+                    for(let currX = 0; currX <= nrToSpawnX; ++currX)
                     {
                         window.gltfLoader.load(ID + ".gltf", function (gltf2)
                         {
@@ -1137,7 +1177,7 @@ class App {
                                     trimToSpawn2 = child.parent;
                                 }
                             });
-                            trimToSpawn2.position.copy(currentPoints[0]);
+                            trimToSpawn2.position.copy(currentPos);
                             trimToSpawn2.rotateX(-Math.PI / 2);
                             if (currY === 0 && currX === 0 )
                             {
