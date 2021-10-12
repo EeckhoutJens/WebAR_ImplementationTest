@@ -1,114 +1,6 @@
 window.gltfLoader = new THREE.GLTFLoader();
-//General UI functions
-function SetModelID(id, type)
-{
-    ModelID = id;
-    if (type === "ceilingTrim")
-        decoType = DecorationTypes.CeilingTrim;
-    if (type === "floorTrim")
-        decoType = DecorationTypes.FloorTrim;
-    if (type === "wallTrim")
-        decoType = DecorationTypes.WallTrim;
-    if (type === "decoration")
-        decoType = DecorationTypes.Decoration;
-    if (type === "set")
-    {
-        decoType = DecorationTypes.Set;
-        if (id === "test")
-            setType = SetTypes.Test;
-        assignSetIDs();
-    }
-    if (type === "fillDecoration")
-        decoType = DecorationTypes.FillDecoration;
 
-}
-
-function assignSetIDs()
-{
-    SetIDs.length = 0;
-    switch (setType)
-    {
-        case SetTypes.Test:
-            SetIDs.push("C341");
-            SetIDs.push("SX118");
-            SetIDs.push("P4020");
-            break;
-    }
-}
-
-function openNav() {
-    document.getElementById("mySidenav").style.width = "250px";
-    gui.hide();
-    document.getElementsByTagName("button")[0].style.display = "none";
-}
-
-function closeNav() {
-    document.getElementById("mySidenav").style.width = "0";
-    gui.show();
-    document.getElementsByTagName("button")[0].style.display = "block";
-}
-
-function openSub1()
-{
-    if (document.getElementById("sub-menu-1").style.display === "none")
-        document.getElementById("sub-menu-1").style.display = "block";
-    else
-        document.getElementById("sub-menu-1").style.display = "none";
-
-}
-
-function openSub2()
-{
-    if (document.getElementById("sub-menu-2").style.display === "none")
-        document.getElementById("sub-menu-2").style.display = "block";
-    else
-        document.getElementById("sub-menu-2").style.display = "none";
-
-}
-
-function openSub3()
-{
-    if (document.getElementById("sub-menu-3").style.display === "none")
-        document.getElementById("sub-menu-3").style.display = "block";
-    else
-        document.getElementById("sub-menu-3").style.display = "none";
-
-}
-
-function openSub4()
-{
-    if (document.getElementById("sub-menu-4").style.display === "none")
-        document.getElementById("sub-menu-4").style.display = "block";
-    else
-        document.getElementById("sub-menu-4").style.display = "none";
-
-}
-
-function openSub5()
-{
-    if (document.getElementById("sub-menu-5").style.display === "none")
-        document.getElementById("sub-menu-5").style.display = "block";
-    else
-        document.getElementById("sub-menu-5").style.display = "none";
-}
-
-function openSub6()
-{
-    if (document.getElementById("sub-menu-6").style.display === "none")
-        document.getElementById("sub-menu-6").style.display = "block";
-    else
-        document.getElementById("sub-menu-6").style.display = "none";
-}
-
-function ScaleToLength(object, length, dimensions)
-{
-    let currentScale = object.scale;
-    currentScale.x = length * currentScale.x / dimensions.x;
-    object.scale = currentScale;
-
-    let box = new THREE.Box3().setFromObject(object);
-    box.getSize(dimensions);
-}
+import {XREstimatedLight} from "./XREstimatedLight.js";
 
 class Reticle extends THREE.Object3D {
     constructor() {
@@ -189,10 +81,128 @@ let params = {trimColor: "#919197" };
 let params2 = {decorationColor: "#919197" };
 let trimColor;
 let decorationColor;
+let defaultEnv;
 
 //Container class to handle WebXR logic
 //Adapted from the AR with WebXR workshop project by Google
 class App {
+
+    //General UI functions
+    SetModelID(id, type)
+    {
+        ModelID = id;
+        if (type === "ceilingTrim")
+            decoType = DecorationTypes.CeilingTrim;
+        if (type === "floorTrim")
+            decoType = DecorationTypes.FloorTrim;
+        if (type === "wallTrim")
+            decoType = DecorationTypes.WallTrim;
+        if (type === "decoration")
+            decoType = DecorationTypes.Decoration;
+        if (type === "set")
+        {
+            decoType = DecorationTypes.Set;
+            if (id === "test")
+                setType = SetTypes.Test;
+            this.assignSetIDs();
+        }
+        if (type === "fillDecoration")
+            decoType = DecorationTypes.FillDecoration;
+
+    }
+
+    assignSetIDs()
+    {
+        SetIDs.length = 0;
+        switch (setType)
+        {
+            case SetTypes.Test:
+                SetIDs.push("C341");
+                SetIDs.push("SX118");
+                SetIDs.push("P4020");
+                break;
+        }
+    }
+
+    openNav() {
+        document.getElementById("mySidenav").style.width = "250px";
+        gui.hide();
+        document.getElementsByTagName("button")[0].style.display = "none";
+    }
+
+    closeNav() {
+        document.getElementById("mySidenav").style.width = "0";
+        gui.show();
+        document.getElementsByTagName("button")[0].style.display = "block";
+    }
+
+    openSub1()
+    {
+        if (document.getElementById("sub-menu-1").style.display === "none")
+            document.getElementById("sub-menu-1").style.display = "block";
+        else
+            document.getElementById("sub-menu-1").style.display = "none";
+
+    }
+
+    openSub2()
+    {
+        if (document.getElementById("sub-menu-2").style.display === "none")
+            document.getElementById("sub-menu-2").style.display = "block";
+        else
+            document.getElementById("sub-menu-2").style.display = "none";
+
+    }
+
+    openSub3()
+    {
+        if (document.getElementById("sub-menu-3").style.display === "none")
+            document.getElementById("sub-menu-3").style.display = "block";
+        else
+            document.getElementById("sub-menu-3").style.display = "none";
+
+    }
+
+    openSub4()
+    {
+        if (document.getElementById("sub-menu-4").style.display === "none")
+            document.getElementById("sub-menu-4").style.display = "block";
+        else
+            document.getElementById("sub-menu-4").style.display = "none";
+
+    }
+
+    openSub5()
+    {
+        if (document.getElementById("sub-menu-5").style.display === "none")
+            document.getElementById("sub-menu-5").style.display = "block";
+        else
+            document.getElementById("sub-menu-5").style.display = "none";
+    }
+
+    openSub6()
+    {
+        if (document.getElementById("sub-menu-6").style.display === "none")
+            document.getElementById("sub-menu-6").style.display = "block";
+        else
+            document.getElementById("sub-menu-6").style.display = "none";
+    }
+
+    ScaleToLength(object, length, dimensions)
+    {
+        let currentScale = object.scale;
+        currentScale.x = length * currentScale.x / dimensions.x;
+        object.scale.set(currentScale.x,currentScale.y,currentScale.z);
+
+        let box = new THREE.Box3().setFromObject(object);
+        box.getSize(dimensions);
+    }
+
+    PrintSomething()
+    {
+        console.log("Session started");
+    }
+
     /**
      * Run when the Start AR button is pressed.
      */
@@ -201,7 +211,7 @@ class App {
         try {
             /** initialize a WebXR session using extra required features. */
             this.xrSession = await navigator.xr.requestSession("immersive-ar", {
-                requiredFeatures: ['hit-test', 'dom-overlay', 'anchors'],
+                requiredFeatures: ['hit-test', 'dom-overlay', 'anchors', 'light-estimation'],
                 domOverlay: { root: document.body }
             });
 
@@ -240,9 +250,6 @@ class App {
         /** Add the `ar` class to our body, which will hide our 2D components. */
         document.body.classList.add('ar');
 
-        /** To help with working with 3D on the web, we'll use three.js. */
-        this.setupThreeJs();
-
         /** Setup an XRReferenceSpace using the "local" coordinate system. */
         this.localReferenceSpace = await this.xrSession.requestReferenceSpace('local');
 
@@ -256,6 +263,10 @@ class App {
         this.xrSession.requestAnimationFrame(this.onXRFrame);
 
         this.xrSession.addEventListener("select", this.onSelect);
+
+        /** To help with working with 3D on the web, we'll use three.js. */
+        this.setupThreeJs();
+
     }
 
     /**
@@ -375,9 +386,14 @@ class App {
             canvas: this.canvas,
             context: this.gl
         });
+
         this.renderer.autoClear = false;
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.outputEncoding = THREE.sRGBEncoding;
+        this.renderer.physicallyCorrectLights = true;
+        this.renderer.xr = this.xrSession;
+        this.renderer.xr.enabled = true;
 
         /** Initialize our demo scene. */
         const scene = new THREE.Scene();
@@ -389,12 +405,36 @@ class App {
         const light = new THREE.AmbientLight(0x222222);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
         directionalLight.position.set(0, 1, 0.75).normalize();
+        const xrLight = new XREstimatedLight(this.renderer);
+
+        //Set up light estimation event listeners
+        xrLight.addEventListener('estimationstart',() =>{
+            console.log("Started light estimation");
+            this.scene.add(xrLight);
+            this.scene.remove(light);
+            this.scene.remove(directionalLight);
+            if (xrLight.environment)
+            {
+                scene.environment = xrLight.environment;
+            }
+        });
+
+        xrLight.addEventListener('estimationend', () =>{
+            console.log("Ended light estimation");
+            this.scene.remove(xrLight);
+            this.scene.environment = defaultEnv;
+            this.scene.add(light);
+            this.scene.add(directionalLight);
+        })
+
+
 
         // We want this light to cast shadow.
         directionalLight.castShadow = true;
 
         // Make a large plane to receive our shadows
         const planeGeometry = new THREE.PlaneGeometry(2000, 2000);
+
         // Rotate our plane to be parallel to the floor
         planeGeometry.rotateX(-Math.PI / 2);
 
@@ -415,6 +455,7 @@ class App {
         scene.add(shadowMesh);
         scene.add(light);
         scene.add(directionalLight);
+
 
         this.scene = scene;
         this.reticle = new Reticle();
@@ -676,8 +717,7 @@ class App {
             .setDataType(THREE.UnsignedByteType)
             .setPath('Textures/')
             .load('lebombo_1k.hdr', function (texture) {
-                var envmap = pmremGenerator.fromEquirectangular(texture).texture;
-                scene.environment = envmap;
+                defaultEnv = pmremGenerator.fromEquirectangular(texture).texture;
                 texture.dispose();
                 pmremGenerator.dispose();
                 window.gltfLoader.setPath('3D/');
@@ -866,9 +906,9 @@ class App {
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawn;
 
-                if (nrToSpawn === 0)
+                if (nrToSpawn <= 0)
                 {
-                    ScaleToLength(trimToSpawn,length,dimensions);
+                    app.ScaleToLength(trimToSpawn,length,dimensions);
                 }
 
                 if (IsX)
@@ -969,7 +1009,7 @@ class App {
                         if (i === nrToSpawn)
                         {
                             length /= (nrToSpawn + 1);
-                            ScaleToLength(trimToSpawn2,length,dimensions);
+                            app.ScaleToLength(trimToSpawn2,length,dimensions);
                         }
 
                         app.scene.add(trimToSpawn2);

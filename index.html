@@ -11,58 +11,60 @@
     <script src="https://unpkg.com/three@0.126.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.124/examples/js/loaders/RGBELoader.js"></script>
 
-    <script src="Core.js"></script>
+    <script src="Core.js" type="module"></script>
+    <script src="XREstimatedLight.js" type="module"></script>
     <script src="node_modules/dat.gui/build/dat.gui.min.js"></script>
+
 
 
 </head>
 <body>
 <div id="content">
     <div id="mySidenav" class="sidenav">
-        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <a href="javascript:void(0)" class="closebtn" onclick="window.app.closeNav()">&times;</a>
 
-        <a href="javascript:void(0)" onclick="openSub1()">Ceiling Trims</a>>
+        <a href="javascript:void(0)" onclick="window.app.openSub1()">Ceiling Trims</a>>
             <div id="sub-menu-1" class="submenu">
-                <a class ="ceilingTrim" id="C341" href="#" onclick="SetModelID(this.id, this.className )">C341</a>
-                <a class ="ceilingTrim" id="C391" href="#" onclick="SetModelID(this.id, this.className)">C391</a>
-                <a class ="ceilingTrim" id="C393" href="#" onclick="SetModelID(this.id, this.className)">C393</a>
+                <a class ="ceilingTrim" id="C341" href="#" onclick="window.app.SetModelID(this.id, this.className )">C341</a>
+                <a class ="ceilingTrim" id="C391" href="#" onclick="window.app.SetModelID(this.id, this.className)">C391</a>
+                <a class ="ceilingTrim" id="C393" href="#" onclick="window.app.SetModelID(this.id, this.className)">C393</a>
             </div>
         </a>
 
-        <a href="javascript:void(0)" onclick="openSub2()">Floor Trims
+        <a href="javascript:void(0)" onclick="window.app.openSub2()">Floor Trims
             <div id="sub-menu-2" class="submenu">
-                <a class ="floorTrim" id="SX118" href="#" onclick="SetModelID(this.id, this.className)">SX118</a>
-                <a class ="floorTrim" id="SX157" href="#" onclick="SetModelID(this.id, this.className)">SX157</a>
-                <a class ="floorTrim" id="SX181" href="#" onclick="SetModelID(this.id, this.className)">SX181</a>
+                <a class ="floorTrim" id="SX118" href="#" onclick="window.app.SetModelID(this.id, this.className)">SX118</a>
+                <a class ="floorTrim" id="SX157" href="#" onclick="window.app.SetModelID(this.id, this.className)">SX157</a>
+                <a class ="floorTrim" id="SX181" href="#" onclick="window.app.SetModelID(this.id, this.className)">SX181</a>
             </div>
         </a>
-        <a href="javascript:void(0)" onclick="openSub3()">Wall Trims
+        <a href="javascript:void(0)" onclick="window.app.openSub3()">Wall Trims
             <div id="sub-menu-3" class="submenu">
-                <a class ="wallTrim" id="P4020" href="#" onclick="SetModelID(this.id, this.className)">P4020</a>
-                <a class ="wallTrim" id="P8020" href="#" onclick="SetModelID(this.id, this.className)">P8020</a>
+                <a class ="wallTrim" id="P4020" href="#" onclick="window.app.SetModelID(this.id, this.className)">P4020</a>
+                <a class ="wallTrim" id="P8020" href="#" onclick="window.app.SetModelID(this.id, this.className)">P8020</a>
             </div>
         </a>
-        <a href="javascript:void(0)" onclick="openSub4()">Decorations
+        <a href="javascript:void(0)" onclick="window.app.openSub4()">Decorations
             <div id="sub-menu-4" class="submenu">
-                <a class ="decoration" id="W100" href="#" onclick="SetModelID(this.id, this.className)">W100</a>
-                <a class ="decoration" id="W105" href="#" onclick="SetModelID(this.id, this.className)">W105</a>
-                <a class ="decoration" id="W106" href="#" onclick="SetModelID(this.id, this.className)">W106</a>
+                <a class ="decoration" id="W100" href="#" onclick="window.app.SetModelID(this.id, this.className)">W100</a>
+                <a class ="decoration" id="W105" href="#" onclick="window.app.SetModelID(this.id, this.className)">W105</a>
+                <a class ="decoration" id="W106" href="#" onclick="window.app.SetModelID(this.id, this.className)">W106</a>
             </div>
         </a>
-        <a href="javascript:void(0)" onclick="openSub5()">Sets
+        <a href="javascript:void(0)" onclick="window.app.openSub5()">Sets
             <div id="sub-menu-5" class="submenu">
-                <a class ="set" id="test" href="#" onclick="SetModelID(this.id, this.className)">Test set</a>
+                <a class ="set" id="test" href="#" onclick="window.app.SetModelID(this.id, this.className)">Test set</a>
             </div>
         </a>
-        <a href="javascript:void(0)" onclick="openSub6()">Fill decorations
+        <a href="javascript:void(0)" onclick="window.app.openSub6()">Fill decorations
             <div id="sub-menu-6" class="submenu">
-                <a class ="fillDecoration" id="W121" href="#" onclick="SetModelID(this.id, this.className)">W121 Test</a>
-                <a class ="fillDecoration" id="W112" href="#" onclick="SetModelID(this.id, this.className)">W112 Melt</a>
+                <a class ="fillDecoration" id="W121" href="#" onclick="window.app.SetModelID(this.id, this.className)">W121 Test</a>
+                <a class ="fillDecoration" id="W112" href="#" onclick="window.app.SetModelID(this.id, this.className)">W112 Melt</a>
             </div>
         </a>
     </div>
 
-    <span id="OpenButton" style="font-size:30px;cursor:pointer;position: absolute; display: none" onclick="openNav()">&#9776; open</span>
+    <span id="OpenButton" style="font-size:30px;cursor:pointer;position: absolute; display: none" onclick="window.app.openNav()">&#9776; open</span>
 </div>
 
 
