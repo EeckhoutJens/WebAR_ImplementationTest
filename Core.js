@@ -1164,8 +1164,8 @@ class App {
                             }
                             trimToSpawn2.position.addScaledVector(positionOffset,currX);
 
-                            trimToSpawn2.position.y += dimensions.y / 2;
-                            trimToSpawn2.position.y += dimensions.y * currY;
+                            trimToSpawn2.position.y -= dimensions.y / 2;
+                            trimToSpawn2.position.y -= dimensions.y * currY;
                             if (IsX)
                             {
                                 if (direction.x < 0)
