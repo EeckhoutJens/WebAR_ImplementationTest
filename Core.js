@@ -531,6 +531,15 @@ class App {
                 }
             })
         }
+
+        for(let currTrim = 0; currTrim < SpawnedWallTrims.length; ++currTrim)
+        {
+            SpawnedWallTrims[currTrim].anchoredObject.traverse((child) => {
+                if (child.isMesh) {
+                    child.material.color.set(trimColor);
+                }
+            })
+        }
     }
 
     UpdateDecorationColor()
@@ -1141,12 +1150,11 @@ class App {
                 box.getSize(dimensions);
                 currentPos.y += dimensions.y / 2;
                 trimToSpawn.position.copy(currentPos);
-                trimToSpawn.rotateX(Math.PI / 2)
 
-                nrToSpawnY = Math.round(YDistance / dimensions.y);
+                nrToSpawnY = Math.ceil(YDistance / dimensions.y);
                 if (IsX)
                 {
-                    nrToSpawnX = Math.round(absDirection.x / dimensions.x);
+                    nrToSpawnX = Math.ceil(absDirection.x / dimensions.x);
                     length = absDirection.x;
                     if (direction.x < 0)
                     {
@@ -1163,7 +1171,7 @@ class App {
                 }
                 else
                 {
-                    nrToSpawnX = Math.round(absDirection.z / dimensions.x);
+                    nrToSpawnX = Math.ceil(absDirection.z / dimensions.x);
                     length = absDirection.z;
                     if (direction.z < 0) {
                         trimToSpawn.rotateY(Math.PI / 2)
@@ -1215,7 +1223,6 @@ class App {
                                 }
                             });
                             trimToSpawn2.position.copy(currentPos);
-                            trimToSpawn2.rotateX(Math.PI / 2)
                             if (currY === 0 && currX === 0 )
                             {
                                 ++currX;
