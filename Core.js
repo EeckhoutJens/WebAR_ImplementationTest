@@ -41,7 +41,8 @@ const DecorationTypes =
         WallTrim: "wallTrim",
         Decoration: "decoration",
         Set: "set",
-        FillDecoration: "fillDecoration"
+        FillDecoration: "fillDecoration",
+        UplightTrim: "uplightTrim"
     }
 
     let decoType = DecorationTypes.Decoration;
@@ -101,6 +102,8 @@ class App {
             decoType = DecorationTypes.WallTrim;
         if (type === "decoration")
             decoType = DecorationTypes.Decoration;
+        if (type === "uplightTrim")
+            decoType = DecorationTypes.UplightTrim;
         if (type === "set")
         {
             decoType = DecorationTypes.Set;
@@ -142,9 +145,9 @@ class App {
         switch (setType)
         {
             case SetTypes.Test:
-                SetIDs.push("C341");
-                SetIDs.push("SX118");
-                SetIDs.push("P4020");
+                SetIDs.push("C393");
+                SetIDs.push("SX181");
+                SetIDs.push("P8020");
                 break;
         }
     }
@@ -212,6 +215,14 @@ class App {
             document.getElementById("sub-menu-6").style.display = "block";
         else
             document.getElementById("sub-menu-6").style.display = "none";
+    }
+
+    openSub7()
+    {
+        if (document.getElementById("sub-menu-7").style.display === "none")
+            document.getElementById("sub-menu-7").style.display = "block";
+        else
+            document.getElementById("sub-menu-7").style.display = "none";
     }
 
     ClipToLength(startPos, object, length, clipNormal)
@@ -568,8 +579,8 @@ class App {
                     this.CreatePlanes();
                     this.DrawPlanes();
                     document.getElementById("OpenButton").style.display = "block";
-                    this.CreateButton();
-
+                    this.CreatePlaceButton();
+                    this.CreateResetButton();
 
                     //Set up colorPicker
                     gui = new dat.GUI();
@@ -821,6 +832,11 @@ class App {
 
                     case DecorationTypes.FillDecoration:
                         app.FillPlane(ModelID);
+                        break;
+
+                    case DecorationTypes.UplightTrim:
+                        app.GenerateCeilingTrims(ModelID);
+                        break;
 
                     //const shadowMesh = scene.children.find(c => c.name === 'shadowMesh');
                     //shadowMesh.position.y = SpawnedDecoration.position.y
@@ -877,12 +893,18 @@ class App {
             {
                 let loadedScene = gltf.scene;
                 let trimToSpawn;
-                loadedScene.traverse((child) => {
-                    if(child.isMesh)
-                    {
-                        trimToSpawn = child.parent;
-                    }
-                });
+                if (decoType !== DecorationTypes.UplightTrim)
+                {
+                    loadedScene.traverse((child) => {
+                        if(child.isMesh)
+                        {
+                            trimToSpawn = child.parent;
+                        }
+                    });
+                }
+                else
+                    trimToSpawn = loadedScene;
+
                 trimToSpawn.position.copy(StartPosition);
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
                 let dimensions = new THREE.Vector3(0,0,0);
@@ -969,13 +991,19 @@ class App {
                     {
                         let loadedScene = gltf2.scene;
                         let trimToSpawn2;
-                        loadedScene.traverse((child) => {
-                            if(child.isMesh)
-                            {
-                                child.material.color = trimColor;
-                                trimToSpawn2 = child.parent;
-                            }
-                        });
+
+                        if (decoType !== DecorationTypes.UplightTrim)
+                        {
+                            loadedScene.traverse((child) => {
+                                if(child.isMesh)
+                                {
+                                    trimToSpawn2 = child.parent;
+                                }
+                            });
+                        }
+                        else
+                            trimToSpawn2 = loadedScene;
+
                         trimToSpawn2.position.copy(StartPosition);
                         if (decoType === DecorationTypes.Decoration)
                         {
@@ -1389,7 +1417,7 @@ class App {
         return direction;
     }
 
-    CreateButton()
+    CreatePlaceButton()
     {
         const button = document.createElement('button');
 
@@ -1421,6 +1449,38 @@ class App {
         document.body.appendChild(button);
     }
 
+    CreateResetButton()
+    {
+        const button = document.createElement('button');
+
+        button.style.display = '';
+
+        button.style.cursor = 'pointer';
+        button.style.left = 'calc(85% - 50px)';
+        button.style.width = '100px';
+        button.textContent = 'Reset';
+        this.stylizeElement(button);
+
+        button.onmouseenter = function () {
+
+            button.style.opacity = '1.0';
+
+        };
+
+        button.onmouseleave = function () {
+
+            button.style.opacity = '0.5';
+
+        };
+
+        button.onclick = function ()
+        {
+            app.ResetClicked();
+        }
+
+        document.body.appendChild(button);
+    }
+
     stylizeElement( element )
     {
 
@@ -1445,6 +1505,14 @@ class App {
             if (ModelID != null)
                 this.LoadModel(this.reticle.position, this.scene);
         }
+    }
+
+    ResetClicked()
+    {
+        this.ResetDecorations();
+        this.ResetWallTrims();
+        this.ResetCeilingTrims();
+        this.ResetFloorTrims();
     }
 }
 
