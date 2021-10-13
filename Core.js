@@ -601,7 +601,7 @@ class App {
             {
                 let FirstLocation = new THREE.Vector3(0,0,0);
                 FirstLocation.copy(this.reticle.position);
-                FirstLocation.z = ConstrainedYPos;
+                FirstLocation.y = ConstrainedYPos;
                 let Point1 = this.CreateSphere(FirstLocation)
 
                 reticleHitTestResult.createAnchor().then((anchor) =>
@@ -614,12 +614,12 @@ class App {
 
                 let SecondLocation = new THREE.Vector3(0,0,0);
                 SecondLocation.copy(FirstLocation);
-                SecondLocation.z = ConstrainedYPos - Height;
+                SecondLocation.y = ConstrainedYPos - Height;
                 let Point2 = this.CreateSphere(SecondLocation);
                 let hitPose = reticleHitTestResult.getPose(this.localReferenceSpace);
                 let transformPosition = new THREE.Vector3(0,0,0);
                 transformPosition.copy(hitPose.transform.position);
-                transformPosition.z = ConstrainedYPos - Height;
+                transformPosition.y = ConstrainedYPos - Height;
                 let XRTransform = new XRRigidTransform(transformPosition, hitPose.transform.orientation);
 
                 reticleHitTestResult.createAnchor(XRTransform, this.localReferenceSpace).then((anchor) =>
@@ -650,8 +650,8 @@ class App {
 
                 if (Points.length === 2)
                 {
-                    ConstrainedYPos = Points[1].anchoredObject.position.z;
-                    Height = ConstrainedYPos - Points[0].anchoredObject.position.z;
+                    ConstrainedYPos = Points[1].anchoredObject.position.y;
+                    Height = ConstrainedYPos - Points[0].anchoredObject.position.y;
                     this.ResetPoints();
                     IsDeterminingHeight = false;
                     PlacingPoints = true;
@@ -1096,7 +1096,7 @@ class App {
                 let trimBox = new THREE.Box3().setFromObject(SpawnedCeilingTrims[0].anchoredObject);
                 let trimdimensions = new THREE.Vector3(0, 0, 0);
                 trimBox.getSize(trimdimensions);
-                currentPos.z += trimdimensions.z;
+                currentPos.y -= trimdimensions.y;
             }
 
             //Check direction of plane
@@ -1113,7 +1113,7 @@ class App {
             Up.copy(currentPoints[1]);
             Up.sub(currentPoints[0]);
 
-            let YDistance = Math.abs(Up.z);
+            let YDistance = Math.abs(Up.y);
 
             if (SpawnedFloorTrims.length !== 0)
             {
@@ -1121,7 +1121,7 @@ class App {
                 let trimdimensions = new THREE.Vector3(0, 0, 0);
                 trimBox.getSize(trimdimensions);
 
-                YDistance -= trimdimensions.z / 4;
+                YDistance -= trimdimensions.y;
             }
 
             window.gltfLoader.load(ID + ".gltf", function (gltf)
@@ -1139,7 +1139,7 @@ class App {
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
                 let dimensions = new THREE.Vector3(0, 0, 0);
                 box.getSize(dimensions);
-                currentPos.z += dimensions.y / 2;
+                currentPos.y += dimensions.y / 2;
                 trimToSpawn.position.copy(currentPos);
                 trimToSpawn.rotateX(Math.PI / 2)
 
@@ -1221,7 +1221,7 @@ class App {
                                 ++currX;
                             }
                             trimToSpawn2.position.addScaledVector(positionOffset,currX);
-                            trimToSpawn2.position.z += dimensions.y * currY;
+                            trimToSpawn2.position.y -= dimensions.y * currY;
                             if (IsX)
                             {
                                 if (direction.x < 0)
@@ -1264,7 +1264,7 @@ class App {
 
                             if (currY === nrToSpawnY - 1)
                             {
-                                let YClipNorm = new THREE.Vector3(0,0,-1);
+                                let YClipNorm = new THREE.Vector3(0,-1,0);
                                 app.ClipToLength(currentPoints[0].z,trimToSpawn2 ,YDistance,YClipNorm) ;
                             }
 
@@ -1334,7 +1334,7 @@ class App {
             let IsX = absDirection.x > absDirection.z;
             let startPoint = new THREE.Vector3(0,0,0);
             startPoint.copy(currentPoints[0]);
-            startPoint.z = this.reticle.position.z;
+            startPoint.y = this.reticle.position.y;
 
             this.GenerateTrims(ID, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
         }
@@ -1387,7 +1387,7 @@ class App {
             if (IsDirectionX)
             {
                 if (position.x <= highest.x && position.x >= lowest.x
-                    &&position.z <= highest.z && position.z >= lowest.z)
+                    &&position.y <= highest.y && position.y >= lowest.y)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
@@ -1396,7 +1396,7 @@ class App {
             else
             {
                 if (position.z <= highest.z && position.z >= lowest.z
-                    && position.x <= highest.x && position.x >= lowest.x)
+                    && position.y <= highest.y && position.y >= lowest.y)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
