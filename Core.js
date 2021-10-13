@@ -29,6 +29,7 @@ class Reticle extends THREE.Object3D {
 //Global variables (Should try to get rid of these)
 const Points = [];
 const Planes = [];
+const Lines = [];
 const SpawnedCeilingTrims = [];
 const SpawnedFloorTrims = [];
 const SpawnedWallTrims = [];
@@ -77,8 +78,9 @@ let IsDirectionX = false;
 let CurrentFrame;
 let pmremGenerator;
 let gui;
-let params = {trimColor: "#919197" };
-let params2 = {decorationColor: "#919197" };
+let paramsTrimColor = {trimColor: "#919197" };
+let paramsDecorationColor = {decorationColor: "#919197" };
+let paramsVisibility = {showGuides: true};
 let trimColor;
 let decorationColor;
 let defaultEnv;
@@ -87,10 +89,10 @@ let defaultEnv;
 //Adapted from the AR with WebXR workshop project by Google
 class App {
 
-    //General UI functions
     SetModelID(id, type)
     {
         ModelID = id;
+
         if (type === "ceilingTrim")
             decoType = DecorationTypes.CeilingTrim;
         if (type === "floorTrim")
@@ -109,6 +111,29 @@ class App {
         if (type === "fillDecoration")
             decoType = DecorationTypes.FillDecoration;
 
+        let preview;
+        if (decoType !== DecorationTypes.Set)
+        {
+            window.gltfLoader.setPath('3D/');
+            window.gltfLoader.load(id + '.gltf', (gltf) => {
+                let scene = gltf.scene;
+                scene.traverse((child) => {
+                    if (child.isMesh)
+                    {
+                        preview = child.parent;
+                        this.scene.remove(this.reticle);
+                        this.reticle = preview;
+                        this.scene.add(this.reticle);
+                    }
+                })
+            })
+        }
+        else
+        {
+            this.scene.remove(this.reticle);
+            this.reticle = new Reticle();
+            this.scene.add(this.reticle);
+        }
     }
 
     assignSetIDs()
@@ -124,6 +149,7 @@ class App {
         }
     }
 
+    //General UI functions
     openNav() {
         document.getElementById("mySidenav").style.width = "250px";
         gui.hide();
@@ -190,22 +216,19 @@ class App {
 
     ClipToLength(startPos, object, length, clipNormal)
     {
-        let clippingPlane = [new THREE.Plane(clipNormal, startPos.x + length)];
-        this.scene.add(new THREE.PlaneHelper(clippingPlane[0], 1, 0xff0000 ));
-
-        const material = new THREE.MeshLambertMaterial({
-            color: trimColor,
-            clippingPlanes: clippingPlane,
-            clipIntersection: true
-        })
+        let clippingPlane = [new THREE.Plane(clipNormal, startPos + length)];
 
         object.traverse((child) => {
-            if(child.isMesh)
-            {
-                child.material = material;
-        }
-    })
+            if(child.isMesh) {
+                if (child.material.clippingPlanes === null)
+                    child.material.clippingPlanes = clippingPlane;
+
+                else
+                child.material.clippingPlanes.push(clippingPlane[0]);
+            }
+        })
     }
+
     /**
      * Run when the Start AR button is pressed.
      */
@@ -478,7 +501,7 @@ class App {
 
     UpdateTrimColor()
     {
-        trimColor = new THREE.Color(params.trimColor);
+        trimColor = new THREE.Color(paramsTrimColor.trimColor);
         for(let currTrim = 0; currTrim < SpawnedCeilingTrims.length; ++currTrim)
         {
         SpawnedCeilingTrims[currTrim].anchoredObject.traverse((child) => {
@@ -501,7 +524,7 @@ class App {
 
     UpdateDecorationColor()
     {
-        decorationColor = new THREE.Color(params2.decorationColor);
+        decorationColor = new THREE.Color(paramsDecorationColor.decorationColor);
         for(let currTrim = 0; currTrim < SpawnedDecorations.length; ++currTrim)
         {
             SpawnedDecorations[currTrim].anchoredObject.traverse((child) => {
@@ -511,6 +534,21 @@ class App {
                 }
             })
         }
+    }
+
+    UpdateGuideVisibility()
+    {
+        let isActive = paramsVisibility.showGuides;
+
+            for (let currentPoint = 0; currentPoint < Points.length; ++currentPoint)
+            {
+                Points[currentPoint].anchoredObject.visible = isActive;
+            }
+
+            for (let currentLine = 0; currentLine < Lines.length; ++currentLine)
+            {
+                Lines[currentLine].visible = isActive;
+            }
     }
 
     /** Place a point when the screen is tapped.
@@ -541,8 +579,10 @@ class App {
                     this.UpdateDecorationColor();
 
                     //Set a callback so that whenever the value of the picker changes, it calls the update
-                    gui.addColor(params, 'trimColor').onChange(this.UpdateTrimColor);
-                    gui.addColor(params2, 'decorationColor').onChange(this.UpdateDecorationColor);
+                    gui.addColor(paramsTrimColor, 'trimColor').onChange(this.UpdateTrimColor);
+                    gui.addColor(paramsDecorationColor, 'decorationColor').onChange(this.UpdateDecorationColor);
+                    gui.add(paramsVisibility, 'showGuides').onChange(this.UpdateGuideVisibility);
+
                     break;
                 }
             }
@@ -550,7 +590,7 @@ class App {
             {
                 let FirstLocation = new THREE.Vector3(0,0,0);
                 FirstLocation.copy(this.reticle.position);
-                FirstLocation.y = ConstrainedYPos;
+                FirstLocation.z = ConstrainedYPos;
                 let Point1 = this.CreateSphere(FirstLocation)
 
                 reticleHitTestResult.createAnchor().then((anchor) =>
@@ -563,12 +603,12 @@ class App {
 
                 let SecondLocation = new THREE.Vector3(0,0,0);
                 SecondLocation.copy(FirstLocation);
-                SecondLocation.y = ConstrainedYPos - Height;
+                SecondLocation.z = ConstrainedYPos - Height;
                 let Point2 = this.CreateSphere(SecondLocation);
                 let hitPose = reticleHitTestResult.getPose(this.localReferenceSpace);
                 let transformPosition = new THREE.Vector3(0,0,0);
                 transformPosition.copy(hitPose.transform.position);
-                transformPosition.y = ConstrainedYPos - Height;
+                transformPosition.z = ConstrainedYPos - Height;
                 let XRTransform = new XRRigidTransform(transformPosition, hitPose.transform.orientation);
 
                 reticleHitTestResult.createAnchor(XRTransform, this.localReferenceSpace).then((anchor) =>
@@ -599,8 +639,8 @@ class App {
 
                 if (Points.length === 2)
                 {
-                    ConstrainedYPos = Points[1].anchoredObject.position.y;
-                    Height = ConstrainedYPos - Points[0].anchoredObject.position.y;
+                    ConstrainedYPos = Points[1].anchoredObject.position.z;
+                    Height = ConstrainedYPos - Points[0].anchoredObject.position.z;
                     this.ResetPoints();
                     IsDeterminingHeight = false;
                     PlacingPoints = true;
@@ -705,6 +745,7 @@ class App {
             const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
             const line = new THREE.Line(geometry,material);
             this.scene.add(line);
+            Lines.push(line);
         }
     }
 
@@ -903,13 +944,6 @@ class App {
                                 anchor: anchor
                             });
                             break;
-
-                        case DecorationTypes.Decoration:
-                            SpawnedDecorations.push({
-                                anchoredObject: trimToSpawn,
-                                anchor: anchor
-                            });
-                            break
                     }
                     });
 
@@ -918,19 +952,13 @@ class App {
 
                 if (nrToSpawn <= 0)
                 {
-                    app.ClipToLength(StartPosition,trimToSpawn ,length,clipNormal);
+                    app.ClipToLength(StartPosition.x,trimToSpawn ,length,clipNormal);
                 }
 
                 if (IsX)
                     trimToSpawn.position.x += dimensions.x / 2;
                 else
                     trimToSpawn.position.z += dimensions.x / 2;
-
-                if (decoType === DecorationTypes.Decoration)
-                {
-                    trimToSpawn.position.z += dimensions.y / 2;
-                    trimToSpawn.rotateX(Math.PI / 2);
-                }
 
                 app.scene.add(trimToSpawn);
 
@@ -1006,19 +1034,12 @@ class App {
                                         anchor: anchor
                                     });
                                     break
-
-                                case DecorationTypes.Decoration:
-                                    SpawnedDecorations.push({
-                                        anchoredObject: trimToSpawn,
-                                        anchor: anchor
-                                    });
-                                    break
                             }
                         });
 
                         if (i === nrToSpawn)
                         {
-                            app.ClipToLength(StartPosition, trimToSpawn2,length,clipNormal);
+                            app.ClipToLength(StartPosition.x, trimToSpawn2,length,clipNormal);
                         }
 
                         app.scene.add(trimToSpawn2);
@@ -1038,14 +1059,16 @@ class App {
             let length;
             let currentPoints = Planes[currentPlane];
             let currentPos = new THREE.Vector3(0, 0, 0);
+            let clipNormal;
             currentPos.copy(currentPoints[0]);
 
-            //In case trims are present - make sure decorations spawn in between the trims
+            //In case ceiling trims are present - make sure decorations spawn below ceiling trim
             if (SpawnedCeilingTrims.length !== 0)
             {
                 let trimBox = new THREE.Box3().setFromObject(SpawnedCeilingTrims[0].anchoredObject);
                 let trimdimensions = new THREE.Vector3(0, 0, 0);
                 trimBox.getSize(trimdimensions);
+                currentPos.z += trimdimensions.z;
             }
 
             //Check direction of plane
@@ -1062,7 +1085,16 @@ class App {
             Up.copy(currentPoints[1]);
             Up.sub(currentPoints[0]);
 
-            let YDistance = Math.abs(Up.y);
+            let YDistance = Math.abs(Up.z);
+
+            if (SpawnedFloorTrims.length !== 0)
+            {
+                let trimBox = new THREE.Box3().setFromObject(SpawnedCeilingTrims[0].anchoredObject);
+                let trimdimensions = new THREE.Vector3(0, 0, 0);
+                trimBox.getSize(trimdimensions);
+
+                YDistance -= trimdimensions.z / 4;
+            }
 
             window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
@@ -1079,8 +1111,9 @@ class App {
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
                 let dimensions = new THREE.Vector3(0, 0, 0);
                 box.getSize(dimensions);
-                currentPos.y -= dimensions.y;
+                currentPos.z += dimensions.y / 2;
                 trimToSpawn.position.copy(currentPos);
+                trimToSpawn.rotateX(Math.PI / 2)
 
                 nrToSpawnY = Math.round(YDistance / dimensions.y);
                 if (IsX)
@@ -1091,10 +1124,12 @@ class App {
                     {
                         trimToSpawn.rotateY(Math.PI);
                         positionOffset.x = -dimensions.x;
+                        clipNormal = new THREE.Vector3(1,0,0);
                     }
                     else
                     {
                         positionOffset.x = dimensions.x;
+                        clipNormal = new THREE.Vector3(-1,0,0);
                     }
 
                 }
@@ -1123,19 +1158,13 @@ class App {
 
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawnX;
-                --nrToSpawnY;
-
-                /**if (nrToSpawnX === 0)
-                {
-                    ScaleToLength(trimToSpawn, length, dimensions);
-                }*/
 
                 if (IsX)
                     trimToSpawn.position.x += dimensions.x / 2;
                 else
                     trimToSpawn.position.z += dimensions.x / 2;
 
-                trimToSpawn.position.y += dimensions.y / 2;
+                //trimToSpawn.position.z += dimensions.y / 2;
 
                 app.scene.add(trimToSpawn);
 
@@ -1158,12 +1187,13 @@ class App {
                                 }
                             });
                             trimToSpawn2.position.copy(currentPos);
+                            trimToSpawn2.rotateX(Math.PI / 2)
                             if (currY === 0 && currX === 0 )
                             {
                                 ++currX;
                             }
                             trimToSpawn2.position.addScaledVector(positionOffset,currX);
-                            trimToSpawn2.position.y -= dimensions.y * currY;
+                            trimToSpawn2.position.z += dimensions.y * currY;
                             if (IsX)
                             {
                                 if (direction.x < 0)
@@ -1199,19 +1229,21 @@ class App {
                                         });
                             })
 
-                            /**if (currX === nrToSpawnX)
+                            if (currX === nrToSpawnX)
                             {
-                                length /= (nrToSpawnX + 1);
-                                ScaleToLength(trimToSpawn2,length,dimensions);
-                            }*/
+                                app.ClipToLength(currentPoints[0].x,trimToSpawn2 ,length,clipNormal) ;
+                            }
+
+                            if (currY === nrToSpawnY - 1)
+                            {
+                                let YClipNorm = new THREE.Vector3(0,0,-1);
+                                app.ClipToLength(currentPoints[0].z,trimToSpawn2 ,YDistance,YClipNorm) ;
+                            }
 
                             app.scene.add(trimToSpawn2);
                         })
                     }
                 }
-
-
-
             })
         }
     }
@@ -1274,7 +1306,7 @@ class App {
             let IsX = absDirection.x > absDirection.z;
             let startPoint = new THREE.Vector3(0,0,0);
             startPoint.copy(currentPoints[0]);
-            startPoint.y = this.reticle.position.y;
+            startPoint.z = this.reticle.position.z;
 
             this.GenerateTrims(ID, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
         }
@@ -1327,7 +1359,7 @@ class App {
             if (IsDirectionX)
             {
                 if (position.x <= highest.x && position.x >= lowest.x
-                    &&position.y <= highest.y && position.y >= lowest.y)
+                    &&position.z <= highest.z && position.z >= lowest.z)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
@@ -1336,7 +1368,7 @@ class App {
             else
             {
                 if (position.z <= highest.z && position.z >= lowest.z
-                    && position.y <= highest.y && position.y >= lowest.y)
+                    && position.x <= highest.x && position.x >= lowest.x)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
