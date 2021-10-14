@@ -158,7 +158,22 @@ class App {
             case SetTypes.Modern:
                 SetIDs.push("C393");
                 SetIDs.push("SX181");
+                SetIDs.push("P6020");
+                break;
+
+            case SetTypes.Classic:
+                SetIDs.push("C341");
                 SetIDs.push("P8020");
+                SetIDs.push("SX118");
+                break;
+
+            case SetTypes.Ornamented:
+                SetIDs.push("P7030");
+                SetIDs.push("C338A");
+                SetIDs.push("SX118");
+                break;
+
+            case SetTypes.Eclectisch:
                 break;
         }
     }
