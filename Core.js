@@ -50,7 +50,10 @@ const DecorationTypes =
 
 const SetTypes =
     {
-        Test: "test"
+        Modern: "modern",
+        Classic: "classic",
+        Ornamented: "ornamented",
+        Eclectisch: "eclestisch"
     }
 
     let setType = SetTypes.Test;
@@ -107,7 +110,7 @@ class App {
         if (type === "set")
         {
             decoType = DecorationTypes.Set;
-            if (id === "test")
+            if (id === "modern")
                 setType = SetTypes.Test;
             this.assignSetIDs();
         }
@@ -152,7 +155,7 @@ class App {
         SetIDs.length = 0;
         switch (setType)
         {
-            case SetTypes.Test:
+            case SetTypes.Modern:
                 SetIDs.push("C393");
                 SetIDs.push("SX181");
                 SetIDs.push("P8020");
