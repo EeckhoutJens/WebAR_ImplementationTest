@@ -63,12 +63,12 @@ let Height = 0;
 //Ensures all the dots are placed on the same Y position
 let ConstrainedYPos = 0;
 
-//Second step, place points in the top left corner of adjacent wall
+//Second step, place points in the corners of the walls
 let PlacingPoints = false;
-const MinDistance = 0.2;
 let NrOfPlanes = 0;
 
-//Third step, if a placed point is close enough to a previous point close of and move to next step
+//Third step, if a placed point is close enough to a previous point close off and move to next step
+const MinDistance = 0.2;
 let FinishedPlacingPlanes = false;
 //-------------------------------------------------------------------------------------------------
 
@@ -125,6 +125,14 @@ class App {
                     {
                         preview = child.parent;
                         this.scene.remove(this.reticle);
+
+                        if (decoType !== DecorationTypes.Decoration)
+                        {
+                            let currScale = preview.scale;
+                            currScale.x /= 2
+                            preview.scale.set(currScale.x,currScale.y,currScale.z);
+                        }
+
                         this.reticle = preview;
                         this.scene.add(this.reticle);
                     }
@@ -345,7 +353,7 @@ class App {
             //   /** If we have results, consider the environment stabilized. */
             if (!this.stabilized && hitTestResults.length > 0) {
                 this.stabilized = true;
-                document.body.classList.add('stabilized');
+                document.getElementById("HeightIcon").style.display = "block";
             }
             if (hitTestResults.length > 0) {
                 let hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
@@ -590,6 +598,7 @@ class App {
                     document.getElementById("OpenButton").style.display = "block";
                     this.CreatePlaceButton();
                     this.CreateResetButton();
+                    document.getElementById("WallsIcon").style.display = "none";
 
                     //Set up colorPicker
                     gui = new dat.GUI();
@@ -664,6 +673,8 @@ class App {
                     this.ResetPoints();
                     IsDeterminingHeight = false;
                     PlacingPoints = true;
+                    document.getElementById("HeightIcon").style.display = "none";
+                    document.getElementById("WallsIcon").style.display = "block";
                 }
             });
         }
