@@ -198,64 +198,13 @@ class App {
         document.getElementsByTagName("button")[0].style.display = "block";
     }
 
-    openSub1()
+    openSub(id)
     {
-        if (document.getElementById("sub-menu-1").style.display === "none")
-            document.getElementById("sub-menu-1").style.display = "block";
+        if (document.getElementById(id).style.display === "none")
+            document.getElementById(id).style.display = "block";
         else
-            document.getElementById("sub-menu-1").style.display = "none";
+            document.getElementById(id).style.display = "none";
 
-    }
-
-    openSub2()
-    {
-        if (document.getElementById("sub-menu-2").style.display === "none")
-            document.getElementById("sub-menu-2").style.display = "block";
-        else
-            document.getElementById("sub-menu-2").style.display = "none";
-
-    }
-
-    openSub3()
-    {
-        if (document.getElementById("sub-menu-3").style.display === "none")
-            document.getElementById("sub-menu-3").style.display = "block";
-        else
-            document.getElementById("sub-menu-3").style.display = "none";
-
-    }
-
-    openSub4()
-    {
-        if (document.getElementById("sub-menu-4").style.display === "none")
-            document.getElementById("sub-menu-4").style.display = "block";
-        else
-            document.getElementById("sub-menu-4").style.display = "none";
-
-    }
-
-    openSub5()
-    {
-        if (document.getElementById("sub-menu-5").style.display === "none")
-            document.getElementById("sub-menu-5").style.display = "block";
-        else
-            document.getElementById("sub-menu-5").style.display = "none";
-    }
-
-    openSub6()
-    {
-        if (document.getElementById("sub-menu-6").style.display === "none")
-            document.getElementById("sub-menu-6").style.display = "block";
-        else
-            document.getElementById("sub-menu-6").style.display = "none";
-    }
-
-    openSub7()
-    {
-        if (document.getElementById("sub-menu-7").style.display === "none")
-            document.getElementById("sub-menu-7").style.display = "block";
-        else
-            document.getElementById("sub-menu-7").style.display = "none";
     }
 
     ClipToLength(startPos, object, length, clipNormal)
@@ -1187,10 +1136,10 @@ class App {
                 currentPos.y -= dimensions.y / 2;
                 trimToSpawn.position.copy(currentPos);
 
-                nrToSpawnY = Math.ceil(YDistance / dimensions.y);
+                nrToSpawnY = Math.floor(YDistance / dimensions.y);
                 if (IsX)
                 {
-                    nrToSpawnX = Math.ceil(absDirection.x / dimensions.x);
+                    nrToSpawnX = Math.floor(absDirection.x / dimensions.x);
                     length = absDirection.x;
                     if (direction.x < 0)
                     {
@@ -1207,7 +1156,7 @@ class App {
                 }
                 else
                 {
-                    nrToSpawnX = Math.ceil(absDirection.z / dimensions.x);
+                    nrToSpawnX = Math.floor(absDirection.z / dimensions.x);
                     length = absDirection.z;
                     if (direction.z < 0) {
                         trimToSpawn.rotateY(Math.PI / 2)
@@ -1304,11 +1253,11 @@ class App {
                                 app.ClipToLength(currentPoints[0].x,trimToSpawn2 ,length,clipNormal) ;
                             }
 
-                            if (currY === nrToSpawnY)
+                           /** if (currY === nrToSpawnY)
                             {
                                 let YClipNorm = new THREE.Vector3(0,-1,0);
                                 app.ClipToLength(currentPoints[0].y,trimToSpawn2 ,YDistance,YClipNorm) ;
-                            }
+                            }*/
 
                             app.scene.add(trimToSpawn2);
                         })
