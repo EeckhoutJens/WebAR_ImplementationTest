@@ -135,7 +135,7 @@ class App {
                         preview = child.parent;
                         this.scene.remove(this.reticle);
 
-                        if (decoType !== DecorationTypes.Decoration ||
+                        if (decoType !== DecorationTypes.Decoration &&
                         decoType !== DecorationTypes.FillDecoration)
                         {
                             let currScale = preview.scale;
@@ -1303,7 +1303,7 @@ class App {
                                 app.ClipToLength(currentPoints[0].x,trimToSpawn2 ,length,clipNormal) ;
                             }
 
-                            if (currY === nrToSpawnY - 1)
+                            if (currY === nrToSpawnY)
                             {
                                 let YClipNorm = new THREE.Vector3(0,-1,0);
                                 app.ClipToLength(currentPoints[0].z,trimToSpawn2 ,YDistance,YClipNorm) ;
