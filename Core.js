@@ -1288,7 +1288,7 @@ class App {
                             reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
                             {
                                         SpawnedDecorations.push({
-                                            anchoredObject: trimToSpawn,
+                                            anchoredObject: trimToSpawn2,
                                             anchor: anchor
                                         });
                             })
