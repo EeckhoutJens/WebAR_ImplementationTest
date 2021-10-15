@@ -1230,6 +1230,7 @@ class App {
 
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawnX;
+                --nrToSpawnY;
 
                 if (IsX)
                     trimToSpawn.position.x += dimensions.x / 2;
@@ -1303,7 +1304,7 @@ class App {
                                 app.ClipToLength(currentPoints[0].x,trimToSpawn2 ,length,clipNormal) ;
                             }
 
-                            if (currY === nrToSpawnY)
+                            if (currY === nrToSpawnY - 1)
                             {
                                 let YClipNorm = new THREE.Vector3(0,-1,0);
                                 app.ClipToLength(currentPoints[0].z,trimToSpawn2 ,YDistance,YClipNorm) ;
