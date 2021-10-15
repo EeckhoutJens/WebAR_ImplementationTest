@@ -111,7 +111,13 @@ class App {
         {
             decoType = DecorationTypes.Set;
             if (id === "modern")
-                setType = SetTypes.Test;
+                setType = SetTypes.Modern;
+            if (id === "classic")
+                setType = SetTypes.Classic;
+            if (id === "ornamented")
+                setType = SetTypes.Ornamented;
+            if (id === "eclestisch")
+                setType = SetTypes.Eclectisch;
             this.assignSetIDs();
         }
         if (type === "fillDecoration")
@@ -129,7 +135,8 @@ class App {
                         preview = child.parent;
                         this.scene.remove(this.reticle);
 
-                        if (decoType !== DecorationTypes.Decoration)
+                        if (decoType !== DecorationTypes.Decoration ||
+                        decoType !== DecorationTypes.FillDecoration)
                         {
                             let currScale = preview.scale;
                             currScale.x /= 2
@@ -1177,7 +1184,7 @@ class App {
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
                 let dimensions = new THREE.Vector3(0, 0, 0);
                 box.getSize(dimensions);
-                currentPos.y += dimensions.y / 2;
+                currentPos.y -= dimensions.y / 2;
                 trimToSpawn.position.copy(currentPos);
 
                 nrToSpawnY = Math.ceil(YDistance / dimensions.y);
@@ -1228,8 +1235,6 @@ class App {
                     trimToSpawn.position.x += dimensions.x / 2;
                 else
                     trimToSpawn.position.z += dimensions.x / 2;
-
-                //trimToSpawn.position.z += dimensions.y / 2;
 
                 app.scene.add(trimToSpawn);
 
