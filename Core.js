@@ -27,9 +27,9 @@ class Reticle extends THREE.Object3D {
 })();
 
 //Global variables (Should try to get rid of these)
-const Points = [];
-const Planes = [];
-const Lines = [];
+const WallPoints = [];
+const WallPlanes = [];
+const WallLines = [];
 const SpawnedCeilingTrims = [];
 const SpawnedFloorTrims = [];
 const SpawnedWallTrims = [];
@@ -183,6 +183,9 @@ class App {
                 break;
 
             case SetTypes.Eclectisch:
+                SetIDs.push("C422");
+                SetIDs.push("SX118");
+                SetIDs.push("P8020");
                 break;
         }
     }
@@ -343,7 +346,7 @@ class App {
 
             // only update the object's position if it's still in the list
             // of frame.trackedAnchors
-            for (const {anchoredObject, anchor} of Points)
+            for (const {anchoredObject, anchor} of WallPoints)
             {
                 if (!frame.trackedAnchors.has(anchor)) {
                     continue;
@@ -480,7 +483,7 @@ class App {
 
 
         this.scene = scene;
-        this.reticle = new Reticle();
+        this.reticle = this.CreateSphere(new THREE.Vector3(0,0,0));
         //this.reticle.rotateX(0.5 * Math.PI);
         this.scene.add(this.reticle);
 
@@ -544,14 +547,14 @@ class App {
     {
         let isActive = paramsVisibility.showGuides;
 
-            for (let currentPoint = 0; currentPoint < Points.length; ++currentPoint)
+            for (let currentPoint = 0; currentPoint < WallPoints.length; ++currentPoint)
             {
-                Points[currentPoint].anchoredObject.visible = isActive;
+                WallPoints[currentPoint].anchoredObject.visible = isActive;
             }
 
-            for (let currentLine = 0; currentLine < Lines.length; ++currentLine)
+            for (let currentLine = 0; currentLine < WallLines.length; ++currentLine)
             {
-                Lines[currentLine].visible = isActive;
+                WallLines[currentLine].visible = isActive;
             }
     }
 
@@ -562,7 +565,7 @@ class App {
     {
         if (PlacingPoints)
         {
-            for (const {anchoredObject, anchor} of Points)
+            for (const {anchoredObject, anchor} of WallPoints)
             {
                 let distanceToMarker = anchoredObject.position.distanceToSquared(this.reticle.position);
                 if (distanceToMarker < MinDistance)
@@ -606,8 +609,8 @@ class App {
 
                 else
                 {
-                    let IndexPrevPoint = Points.length - 2;
-                    let prevPoint = Points[IndexPrevPoint].anchoredObject;
+                    let IndexPrevPoint = WallPoints.length - 2;
+                    let prevPoint = WallPoints[IndexPrevPoint].anchoredObject;
                     let direction = new THREE.Vector3(0,0,0);
                     direction.copy(FirstLocation);
                     direction.sub(prevPoint.position);
@@ -624,7 +627,7 @@ class App {
 
                 reticleHitTestResult.createAnchor().then((anchor) =>
                 {
-                    Points.push({
+                    WallPoints.push({
                         anchoredObject: Point1,
                         anchor: anchor
                     });
@@ -642,12 +645,12 @@ class App {
 
                 reticleHitTestResult.createAnchor(XRTransform, this.localReferenceSpace).then((anchor) =>
                 {
-                    Points.push({
+                    WallPoints.push({
                         anchoredObject: Point2,
                         anchor: anchor
                     });
 
-                    if (Points.length >= 4)
+                    if (WallPoints.length >= 4)
                     {
                         ++NrOfPlanes;
                     }
@@ -661,15 +664,15 @@ class App {
             let test = this.CreateSphere(this.reticle.position);
             reticleHitTestResult.createAnchor().then((anchor) =>
             {
-                Points.push({
+                WallPoints.push({
                     anchoredObject: test,
                     anchor: anchor
                 });
 
-                if (Points.length === 2)
+                if (WallPoints.length === 2)
                 {
-                    ConstrainedYPos = Points[1].anchoredObject.position.z;
-                    Height = ConstrainedYPos - Points[0].anchoredObject.position.z;
+                    ConstrainedYPos = WallPoints[1].anchoredObject.position.z;
+                    Height = ConstrainedYPos - WallPoints[0].anchoredObject.position.z;
                     this.ResetPoints();
                     IsDeterminingHeight = false;
                     PlacingPoints = true;
@@ -682,12 +685,12 @@ class App {
 
     ResetPoints()
     {
-        for(let i= 0; i < Points.length; ++i)
+        for(let i= 0; i < WallPoints.length; ++i)
         {
-            this.scene.remove(Points[i].anchoredObject);
-            Points[i].anchor.delete();
+            this.scene.remove(WallPoints[i].anchoredObject);
+            WallPoints[i].anchor.delete();
         }
-        Points.length = 0;
+        WallPoints.length = 0;
     }
 
     ResetCeilingTrims()
@@ -748,20 +751,20 @@ class App {
             //Add Points that define plane to array and store that array
             //LeftTop - LeftBottom - RightBottom - RightTop
             const planePoints = [];
-            planePoints.push(Points[startIndex].anchoredObject.position);
-            planePoints.push(Points[startIndex + 1].anchoredObject.position)
-            planePoints.push(Points[startIndex + 3].anchoredObject.position)
-            planePoints.push(Points[startIndex + 2].anchoredObject.position)
-            Planes.push(planePoints);
+            planePoints.push(WallPoints[startIndex].anchoredObject.position);
+            planePoints.push(WallPoints[startIndex + 1].anchoredObject.position)
+            planePoints.push(WallPoints[startIndex + 3].anchoredObject.position)
+            planePoints.push(WallPoints[startIndex + 2].anchoredObject.position)
+            WallPlanes.push(planePoints);
             startIndex += 2;
         }
     }
 
     DrawPlanes()
     {
-        for(let i = 0; i < Planes.length; ++i)
+        for(let i = 0; i < WallPlanes.length; ++i)
         {
-            var Points = Planes[i];
+            var Points = WallPlanes[i];
             var linePoints = [];
             for(let j = 0; j < Points.length; ++j)
             {
@@ -776,7 +779,7 @@ class App {
             const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
             const line = new THREE.Line(geometry,material);
             this.scene.add(line);
-            Lines.push(line);
+            WallLines.push(line);
         }
     }
 
@@ -1100,13 +1103,13 @@ class App {
     FillPlane(ID)
     {
         this.ResetDecorations();
-        for (let currentPlane = 0; currentPlane < Planes.length; ++currentPlane)
+        for (let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
         {
             let nrToSpawnX;
             let nrToSpawnY;
             let positionOffset = new THREE.Vector3(0,0,0);
             let length;
-            let currentPoints = Planes[currentPlane];
+            let currentPoints = WallPlanes[currentPlane];
             let currentPos = new THREE.Vector3(0, 0, 0);
             let clipNormal;
             currentPos.copy(currentPoints[0]);
@@ -1297,9 +1300,9 @@ class App {
     GenerateCeilingTrims(ID)
     {
         this.ResetCeilingTrims();
-        for(let currentPlane = 0; currentPlane < Planes.length; ++currentPlane)
+        for(let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
         {
-            let currentPoints = Planes[currentPlane];
+            let currentPoints = WallPlanes[currentPlane];
 
             //Check direction of plane
             let direction = this.CalculatePlaneDirection(currentPoints);
@@ -1317,9 +1320,9 @@ class App {
     GenerateFloorTrims(ID)
     {
         this.ResetFloorTrims();
-        for(let currentPlane = 0; currentPlane < Planes.length; ++currentPlane)
+        for(let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
         {
-            let currentPoints = Planes[currentPlane];
+            let currentPoints = WallPlanes[currentPlane];
 
             //Check direction of plane
             let direction = this.CalculatePlaneDirection(currentPoints);
@@ -1338,9 +1341,9 @@ class App {
     GenerateWallTrims(ID)
     {
         this.ResetWallTrims();
-        for(let currentPlane = 0; currentPlane < Planes.length; ++currentPlane)
+        for(let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
         {
-            let currentPoints = Planes[currentPlane];
+            let currentPoints = WallPlanes[currentPlane];
 
             //Check direction of plane
             let direction = this.CalculatePlaneDirection(currentPoints);
@@ -1362,11 +1365,11 @@ class App {
     IsInPlane(position)
     {
         var inside = false;
-        for(var currentPlaneId = 0; currentPlaneId < Planes.length;++currentPlaneId)
+        for(var currentPlaneId = 0; currentPlaneId < WallPlanes.length;++currentPlaneId)
         {
             var highest = new THREE.Vector3(0,0,0);
             var lowest = new THREE.Vector3(0,0,0);
-            var currentPoints = Planes[currentPlaneId];
+            var currentPoints = WallPlanes[currentPlaneId];
             highest.copy(currentPoints[0]);
             lowest.copy(currentPoints[0]);
             for(var i = 0; i < currentPoints.length; ++i)
