@@ -362,12 +362,12 @@ class App {
                 let PreviewPoints = [];
                 let InitialPos = new THREE.Vector3(0,0,0);
                 InitialPos.copy(this.reticle.position);
-                InitialPos.z = ConstrainedYPos;
+                InitialPos.y = ConstrainedYPos;
                 PreviewPoints.push(InitialPos);
 
                 let adjustedPos = new THREE.Vector3(0,0,0);
                 adjustedPos.copy(this.reticle.position);
-                adjustedPos.z = ConstrainedYPos - Height;
+                adjustedPos.y = ConstrainedYPos - Height;
                 PreviewPoints.push(adjustedPos);
 
                 let copiedPos1 = new THREE.Vector3(0,0,0);
@@ -628,7 +628,7 @@ class App {
                     this.UpdateTrimColor();
                     this.UpdateDecorationColor();
 
-                    //Set a callback so that whenever the value of the picker changes, it calls the update
+                    //Set a callback so that whenever user changes a value, it calls the update
                     gui.addColor(paramsTrimColor, 'trimColor').onChange(this.UpdateTrimColor);
                     gui.addColor(paramsDecorationColor, 'decorationColor').onChange(this.UpdateDecorationColor);
                     gui.add(paramsVisibility, 'showGuides').onChange(this.UpdateGuideVisibility);
@@ -641,7 +641,7 @@ class App {
                 let Point1;
                 let FirstLocation = new THREE.Vector3(0,0,0);
                 FirstLocation.copy(this.reticle.position);
-                FirstLocation.z = ConstrainedYPos;
+                FirstLocation.y = ConstrainedYPos;
 
                 //Used to ensure that the else code doesn't execute when placing first point
                 if (!PlacedFirstPoint)
@@ -677,12 +677,12 @@ class App {
 
                 let SecondLocation = new THREE.Vector3(0,0,0);
                 SecondLocation.copy(FirstLocation);
-                SecondLocation.z = ConstrainedYPos - Height;
+                SecondLocation.y = ConstrainedYPos - Height;
                 let Point2 = this.CreateSphere(SecondLocation);
                 let hitPose = reticleHitTestResult.getPose(this.localReferenceSpace);
                 let transformPosition = new THREE.Vector3(0,0,0);
                 transformPosition.copy(hitPose.transform.position);
-                transformPosition.z = ConstrainedYPos - Height;
+                transformPosition.y = ConstrainedYPos - Height;
                 let XRTransform = new XRRigidTransform(transformPosition, hitPose.transform.orientation);
 
                 reticleHitTestResult.createAnchor(XRTransform, this.localReferenceSpace).then((anchor) =>
@@ -719,8 +719,10 @@ class App {
 
                 if (WallPoints.length === 2)
                 {
-                    ConstrainedYPos = WallPoints[1].anchoredObject.position.z;
-                    Height = ConstrainedYPos - WallPoints[0].anchoredObject.position.z;
+                    ConstrainedYPos = WallPoints[1].anchoredObject.position.y;
+                    //DELETE - Just added it now for testing purposes
+                    ConstrainedYPos = 1;
+                    Height = ConstrainedYPos - WallPoints[0].anchoredObject.position.y;
                     this.ResetPoints();
                     IsDeterminingHeight = false;
                     PlacingPoints = true;
@@ -1168,7 +1170,7 @@ class App {
                 let trimBox = new THREE.Box3().setFromObject(SpawnedCeilingTrims[0].anchoredObject);
                 let trimdimensions = new THREE.Vector3(0, 0, 0);
                 trimBox.getSize(trimdimensions);
-                currentPos.z += trimdimensions.y;
+                currentPos.y -= trimdimensions.y;
             }
 
             //Check direction of plane
@@ -1193,7 +1195,7 @@ class App {
                 let trimdimensions = new THREE.Vector3(0, 0, 0);
                 trimBox.getSize(trimdimensions);
 
-                YDistance += trimdimensions.y;
+                YDistance -= trimdimensions.y;
             }
 
             window.gltfLoader.load(ID + ".gltf", function (gltf)
@@ -1211,7 +1213,7 @@ class App {
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
                 let dimensions = new THREE.Vector3(0, 0, 0);
                 box.getSize(dimensions);
-                currentPos.z += dimensions.y / 2;
+                currentPos.y -= dimensions.y / 2;
                 trimToSpawn.position.copy(currentPos);
 
                 nrToSpawnY = Math.floor(YDistance / dimensions.y);
@@ -1290,7 +1292,7 @@ class App {
                                 ++currX;
                             }
                             trimToSpawn2.position.addScaledVector(positionOffset,currX);
-                            trimToSpawn2.position.z += dimensions.y * currY;
+                            trimToSpawn2.position.y -= dimensions.y * currY;
                             if (IsX)
                             {
                                 if (direction.x < 0)
@@ -1403,7 +1405,7 @@ class App {
             let IsX = absDirection.x > absDirection.z;
             let startPoint = new THREE.Vector3(0,0,0);
             startPoint.copy(currentPoints[0]);
-            startPoint.z = this.reticle.position.z;
+            startPoint.y = this.reticle.position.y;
 
             this.GenerateTrims(ID, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
         }
@@ -1449,7 +1451,7 @@ class App {
             if (IsDirectionX)
             {
                 if (position.x <= highest.x && position.x >= lowest.x
-                    &&position.z <= highest.z && position.z >= lowest.z)
+                    &&position.y <= highest.y && position.y >= lowest.y)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
@@ -1458,7 +1460,7 @@ class App {
             else
             {
                 if (position.z <= highest.z && position.z >= lowest.z
-                    && position.x <= highest.x && position.x >= lowest.x)
+                    && position.y <= highest.y && position.y >= lowest.y)
                 {
                     inside = true;
                     HitPlaneDirection = direction;
