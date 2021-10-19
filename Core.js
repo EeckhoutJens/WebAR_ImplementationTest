@@ -90,6 +90,8 @@ let paramsVisibility = {showGuides: true};
 let trimColor;
 let decorationColor;
 let defaultEnv;
+let stats = new Stats();
+let previewLine;
 
 //Container class to handle WebXR logic
 //Adapted from the AR with WebXR workshop project by Google
@@ -284,6 +286,13 @@ class App {
         this.hitTestSource = await this.xrSession.requestHitTestSource({ space: this.viewerSpace });
 
         /** Start a rendering loop using this.onXRFrame. */
+
+        //Initialize stats panel
+        stats.showPanel(0);
+        stats.dom.style.left = "25px";
+        stats.dom.style.top = "700px";
+        document.body.appendChild(stats.dom);
+
         this.xrSession.requestAnimationFrame(this.onXRFrame);
 
         this.xrSession.addEventListener("select", this.onSelect);
@@ -298,6 +307,8 @@ class App {
      * Called with the time and XRPresentationFrame.
      */
     onXRFrame = (time, frame) => {
+
+        stats.begin();
 
         /** Store current frame*/
         CurrentFrame = frame;
@@ -342,6 +353,39 @@ class App {
                 this.reticle.visible = true;
                 this.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
                 this.reticle.updateMatrixWorld(true);
+            }
+
+            //Draw preview lines while placing points to define walls
+            if (PlacingPoints && PlacedFirstPoint)
+            {
+                this.scene.remove(previewLine);
+                let PreviewPoints = [];
+                let InitialPos = new THREE.Vector3(0,0,0);
+                InitialPos.copy(this.reticle.position);
+                InitialPos.z = ConstrainedYPos;
+                PreviewPoints.push(InitialPos);
+
+                let adjustedPos = new THREE.Vector3(0,0,0);
+                adjustedPos.copy(this.reticle.position);
+                adjustedPos.z = ConstrainedYPos - Height;
+                PreviewPoints.push(adjustedPos);
+
+                let copiedPos1 = new THREE.Vector3(0,0,0);
+                let copiedPos2 = new THREE.Vector3(0,0,0);
+                let arrLength = WallPoints.length;
+
+                copiedPos1.copy(WallPoints[arrLength - 1].anchoredObject.position);
+                copiedPos2.copy(WallPoints[arrLength - 2].anchoredObject.position);
+
+                PreviewPoints.push(copiedPos1);
+                PreviewPoints.push(copiedPos2);
+                PreviewPoints.push(InitialPos);
+
+                const material = new THREE.LineBasicMaterial({color: 0x0000ff});
+                const geometry = new THREE.BufferGeometry().setFromPoints(PreviewPoints);
+                const line = new THREE.Line(geometry,material);
+                this.scene.add(line);
+                previewLine = line;
             }
 
             // only update the object's position if it's still in the list
@@ -394,6 +438,8 @@ class App {
 
             /** Render the scene with THREE.WebGLRenderer. */
             this.renderer.render(this.scene, this.camera)
+
+            stats.end();
         }
     }
 
@@ -475,12 +521,6 @@ class App {
         shadowMesh.name = 'shadowMesh';
         shadowMesh.receiveShadow = true;
         shadowMesh.position.y = 10000;
-
-        // Add lights and shadow material to scene.
-        scene.add(shadowMesh);
-        scene.add(light);
-        scene.add(directionalLight);
-
 
         this.scene = scene;
         this.reticle = this.CreateSphere(new THREE.Vector3(0,0,0));
@@ -572,8 +612,10 @@ class App {
                 {
                     FinishedPlacingPlanes = true;
                     PlacingPoints = false;
+                    this.scene.remove(previewLine);
+                    previewLine = null;
                     this.CreatePlanes();
-                    this.DrawPlanes();
+                    //this.DrawPlanes();
                     document.getElementById("OpenButton").style.display = "block";
                     this.CreatePlaceButton();
                     this.CreateResetButton();
@@ -656,6 +698,12 @@ class App {
                     }
                 });
 
+                if (WallPoints.length > 0)
+                {
+                    let test = previewLine.clone();
+                    WallLines.push(test);
+                    previewLine = null;
+                }
             }
         }
 
