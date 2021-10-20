@@ -217,6 +217,8 @@ class App {
     ClipToLength(startPos, object, length, clipNormal)
     {
         let clippingPlane = [new THREE.Plane(clipNormal, startPos + length)];
+        let test = new THREE.PlaneHelper(clippingPlane[0],2,0x0000ff )
+        this.scene.add(test);
 
         object.traverse((child) => {
             if(child.isMesh) {
@@ -649,7 +651,7 @@ class App {
                     PlacedFirstPoint = true;
                 }
 
-                else
+                /**else
                 {
                     let IndexPrevPoint = WallPoints.length - 2;
                     let prevPoint = WallPoints[IndexPrevPoint].anchoredObject;
@@ -662,7 +664,7 @@ class App {
                         FirstLocation.y = prevPoint.position.y;
                     else
                         FirstLocation.x = prevPoint.position.x;
-                }
+                }*/
 
                 Point1 = this.CreateSphere(FirstLocation);
 
@@ -952,13 +954,16 @@ class App {
             if (IsX)
             {
                 if (direction.x > 0)
-                {
                     clipNormal = new THREE.Vector3(-1,0,0);
-                }
                 else
-                {
-                    clipNormal = new THREE.Vector3(1,0,0);
-                }
+                    clipNormal = new THREE.Vector3(-1,0,0);
+            }
+            else
+            {
+                if (direction.z > 0)
+                    clipNormal = new THREE.Vector3(0,0,-1);
+                else
+                    clipNormal = new THREE.Vector3(0,0,1);
             }
 
             //Initial load so we can use data to calculate additional nr of meshes we still need to load after this
@@ -1047,7 +1052,29 @@ class App {
 
                 if (nrToSpawn <= 0)
                 {
-                    app.ClipToLength(StartPosition.x,trimToSpawn ,length,clipNormal);
+                    if (IsX)
+                    {
+                        if (direction.x < 0)
+                        {
+                            trimToSpawn.position.x -= length;
+                            length = 0;
+                        }
+                        app.ClipToLength(StartPosition.x,trimToSpawn ,length,clipNormal);
+                    }
+
+                    else
+                        app.ClipToLength(StartPosition.z,trimToSpawn ,length,clipNormal);
+                }
+                else
+                {
+                    if (IsX)
+                    {
+                        if (direction.x < 0)
+                        {
+                            trimToSpawn.position.x -= dimensions.x;
+                        }
+                    }
+
                 }
 
                 if (IsX)
@@ -1140,7 +1167,10 @@ class App {
 
                         if (i === nrToSpawn)
                         {
-                            app.ClipToLength(StartPosition.x, trimToSpawn2,length,clipNormal);
+                            if (IsX)
+                                app.ClipToLength(StartPosition.x,trimToSpawn2 ,length,clipNormal);
+                            else
+                                app.ClipToLength(StartPosition.z,trimToSpawn2 ,length,clipNormal);
                         }
 
                         app.scene.add(trimToSpawn2);
