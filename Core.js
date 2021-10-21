@@ -742,6 +742,8 @@ class App {
                 if (WallPoints.length > 0)
                 {
                     let test = previewLine.clone();
+                    this.scene.remove(previewLine);
+                    this.scene.add(test);
                     WallLines.push(test);
                     previewLine = null;
                 }
@@ -790,10 +792,11 @@ class App {
                 {
                     //Generate top left
                     let topLeftPosition = DoorPoints[0].anchoredObject.position.clone();
-                    topLeftPosition.y = DoorPoints[1].anchoredObject.position.y;
+                    topLeftPosition.y = 0.5;
                     let topLeftSphere = this.CreateSphere(topLeftPosition);
 
                     //Generate bottom right
+                    DoorPoints[1].anchoredObject.position.y = 0.5;
                     let bottomRightPosition = DoorPoints[1].anchoredObject.position.clone();
                     bottomRightPosition.y = DoorPoints[0].anchoredObject.position.y;
                     let bottomRightSphere = this.CreateSphere(bottomRightPosition);
@@ -1300,26 +1303,33 @@ class App {
     {
         //Need to load 3 trims - left,top,right
         //1 (left), 0 (top), 2 (right)
-        //Mesh represents 2m so right/left should be fine top might need to clipped
         //Iterate over each door or keep it unique per door?
         //Needs direction (X or Z)
         for(let currentPlane = 0; currentPlane < DoorPlanes.length; ++currentPlane)
         {
             let currentPoints = DoorPlanes[currentPlane];
 
-            let direction = this.CalculatePlaneDirection(currentPoints);
-            let absDirection = new THREE.Vector3(0,0,0);
-            absDirection.copy(direction);
-            absDirection.x = Math.abs(absDirection.x);
-            absDirection.y = Math.abs(absDirection.y);
-            absDirection.z = Math.abs(absDirection.z);
-            let IsX = absDirection.x > absDirection.z;
+            let rightDirection = this.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
+            let upDirection = this.CalculatePlaneDirection(currentPoints[1],currentPoints[0]);
+            let absRightDirection = new THREE.Vector3(0,0,0);
+            absRightDirection.copy(rightDirection);
+            absRightDirection.x = Math.abs(absRightDirection.x);
+            absRightDirection.y = Math.abs(absRightDirection.y);
+            absRightDirection.z = Math.abs(absRightDirection.z);
+            let IsX = absRightDirection.x > absRightDirection.z;
+            let box;
+            let dimensions = new THREE.Vector3(0,0,0);
 
             window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
                 let leftTrim = gltf.scene;
+                box = new THREE.Box3().setFromObject(leftTrim);
+                box.getSize(dimensions);
                 leftTrim.rotateZ(Math.PI / 2);
                 leftTrim.position.copy(currentPoints[1]);
+                leftTrim.position.y += dimensions.x / 2;
+                let YClip = new THREE.Vector3(0,-1,0);
+                app.ClipToLength(currentPoints[1].y,leftTrim,upDirection.y,YClip);
                 app.scene.add(leftTrim);
             })
 
@@ -1328,6 +1338,9 @@ class App {
                 let rightTrim = gltf.scene;
                 rightTrim.rotateZ(Math.PI / 2);
                 rightTrim.position.copy(currentPoints[2]);
+                rightTrim.position.y += dimensions.x / 2;
+                let YClip = new THREE.Vector3(0,-1,0);
+                app.ClipToLength(currentPoints[2].y,rightTrim,upDirection.y,YClip);
                 app.scene.add(rightTrim);
             })
 
@@ -1335,6 +1348,9 @@ class App {
             {
                 let topTrim = gltf.scene;
                 topTrim.position.copy(currentPoints[0]);
+                topTrim.position.x += dimensions.x / 2.12;
+                let XClip = new THREE.Vector3(-1,0,0);
+                app.ClipToLength(currentPoints[0].x,topTrim,rightDirection.x +0.1,XClip);
                 app.scene.add(topTrim);
             })
         }
@@ -1366,7 +1382,7 @@ class App {
             }
 
             //Check direction of plane
-            let direction = this.CalculatePlaneDirection(currentPoints);
+            let direction = this.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
             let absDirection = new THREE.Vector3(0, 0, 0);
             absDirection.copy(direction);
             absDirection.x = Math.abs(absDirection.x);
@@ -1547,7 +1563,7 @@ class App {
             let currentPoints = WallPlanes[currentPlane];
 
             //Check direction of plane
-            let direction = this.CalculatePlaneDirection(currentPoints);
+            let direction = this.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
             let absDirection = new THREE.Vector3(0,0,0);
             absDirection.copy(direction);
             absDirection.x = Math.abs(absDirection.x);
@@ -1567,7 +1583,7 @@ class App {
             let currentPoints = WallPlanes[currentPlane];
 
             //Check direction of plane
-            let direction = this.CalculatePlaneDirection(currentPoints);
+            let direction = this.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
             let absDirection = new THREE.Vector3(0,0,0);
             absDirection.copy(direction);
             absDirection.x = Math.abs(absDirection.x);
@@ -1588,7 +1604,7 @@ class App {
             let currentPoints = WallPlanes[currentPlane];
 
             //Check direction of plane
-            let direction = this.CalculatePlaneDirection(currentPoints);
+            let direction = this.CalculatePlaneDirection(currentPoints[1], currentPoints[2]);
             let absDirection = new THREE.Vector3(0,0,0);
             absDirection.copy(direction);
             absDirection.x = Math.abs(absDirection.x);
@@ -1637,7 +1653,7 @@ class App {
             }
 
             //Calculate Right direction of plane
-            let direction = this.CalculatePlaneDirection(currentPoints);
+            let direction = this.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
 
             //Check if given position is within boundary
             if (IsDirectionX)
@@ -1664,11 +1680,11 @@ class App {
         return inside;
     }
 
-    CalculatePlaneDirection(plane)
+    CalculatePlaneDirection(startPos, endPos)
     {
         let direction = new THREE.Vector3(0,0,0);
-        direction.copy(plane[2]);
-        direction.sub(plane[1]);
+        direction.copy(endPos);
+        direction.sub(startPos);
 
         let absDirection = new THREE.Vector3(0,0,0);
         absDirection.copy(direction);
