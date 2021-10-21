@@ -39,10 +39,11 @@ const WindowPoints = [];
 const WindowPlanes = [];
 const WindowLines = [];
 
-
 const SpawnedCeilingTrims = [];
 const SpawnedFloorTrims = [];
 const SpawnedWallTrims = [];
+const SpawnedDoorTrims = [];
+
 const SetIDs = [];
 const DecorationTypes =
     {
@@ -507,8 +508,10 @@ class App {
         // for the shadow.
         const light = new THREE.AmbientLight(0x222222);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.castShadow = true;
         directionalLight.position.set(0, 1, 0.75).normalize();
         const xrLight = new XREstimatedLight(this.renderer);
+        xrLight.castShadow = true;
 
         //Set up light estimation event listeners
         xrLight.addEventListener('estimationstart',() =>{
@@ -529,11 +532,6 @@ class App {
             this.scene.add(light);
             this.scene.add(directionalLight);
         })
-
-
-
-        // We want this light to cast shadow.
-        directionalLight.castShadow = true;
 
         // Make a large plane to receive our shadows
         const planeGeometry = new THREE.PlaneGeometry(2000, 2000);
@@ -556,8 +554,8 @@ class App {
 
         this.scene = scene;
         this.reticle = this.CreateSphere(new THREE.Vector3(0,0,0));
-        //this.reticle.rotateX(0.5 * Math.PI);
         this.scene.add(this.reticle);
+        this.scene.add(shadowMesh);
 
         /** We'll update the camera matrices directly from API, so
          * disable matrix auto updates so three.js doesn't attempt
@@ -594,6 +592,15 @@ class App {
         for(let currTrim = 0; currTrim < SpawnedWallTrims.length; ++currTrim)
         {
             SpawnedWallTrims[currTrim].anchoredObject.traverse((child) => {
+                if (child.isMesh) {
+                    child.material.color.set(trimColor);
+                }
+            })
+        }
+
+        for (let currTrim = 0; currTrim < SpawnedDoorTrims.length; ++currTrim)
+        {
+            SpawnedDoorTrims[currTrim].traverse((child) => {
                 if (child.isMesh) {
                     child.material.color.set(trimColor);
                 }
@@ -763,8 +770,10 @@ class App {
                 if (WallPoints.length === 2)
                 {
                     ConstrainedYPosWalls = WallPoints[1].anchoredObject.position.y;
+
                     //DELETE - Just added it now for testing purposes
                     ConstrainedYPosWalls = 1;
+
                     WallHeight = ConstrainedYPosWalls - WallPoints[0].anchoredObject.position.y;
                     this.ResetWallPoints();
                     IsDeterminingHeightWalls = false;
@@ -1032,9 +1041,6 @@ class App {
                     case DecorationTypes.Doortrim:
                         app.GenerateDoorTrims(ModelID);
                         break;
-
-                    //const shadowMesh = scene.children.find(c => c.name === 'shadowMesh');
-                    //shadowMesh.position.y = SpawnedDecoration.position.y
                 }
             });
     }
@@ -1096,6 +1102,7 @@ class App {
                     loadedScene.traverse((child) => {
                         if(child.isMesh)
                         {
+                            child.material.color.set(trimColor);
                             trimToSpawn = child.parent;
                         }
                     });
@@ -1202,6 +1209,8 @@ class App {
                 else
                     trimToSpawn.position.z += dimensions.x / 2;
 
+                const shadowMesh = app.scene.children.find(c => c.name === 'shadowMesh');
+                shadowMesh.position.y = trimToSpawn.position.y
                 app.scene.add(trimToSpawn);
 
                 //Now we load enough meshes to fill up top line of plane
@@ -1217,6 +1226,7 @@ class App {
                             loadedScene.traverse((child) => {
                                 if(child.isMesh)
                                 {
+                                    child.material.color.set(trimColor);
                                     trimToSpawn2 = child.parent;
                                 }
                             });
@@ -1293,6 +1303,8 @@ class App {
                                 app.ClipToLength(StartPosition.z,trimToSpawn2 ,length,clipNormal);
                         }
 
+                        const shadowMesh = app.scene.children.find(c => c.name === 'shadowMesh');
+                        shadowMesh.position.y = trimToSpawn2.position.y
                         app.scene.add(trimToSpawn2);
                     })
                 }
@@ -1320,38 +1332,113 @@ class App {
             let box;
             let dimensions = new THREE.Vector3(0,0,0);
 
+            //Load left trim and get dimensions
             window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
-                let leftTrim = gltf.scene;
+                let loadedScene = gltf.scene;
+                let leftTrim;
+                loadedScene.traverse((child) => {
+                    if(child.isMesh)
+                    {
+                        child.material.color.set(trimColor);
+                        leftTrim = child.parent;
+                    }
+                });
                 box = new THREE.Box3().setFromObject(leftTrim);
                 box.getSize(dimensions);
                 leftTrim.rotateZ(Math.PI / 2);
+                leftTrim.rotateX(-Math.PI);
+
+                if (IsX)
+                {
+                    if (rightDirection.x < 0)
+                        leftTrim.rotateX(Math.PI);
+                }
+                else
+                {
+                    if (rightDirection.z < 0)
+                        leftTrim.rotateX(Math.PI / 2);
+                    else
+                        leftTrim.rotateX(-Math.PI / 2);
+                }
+
                 leftTrim.position.copy(currentPoints[1]);
                 leftTrim.position.y += dimensions.x / 2;
                 let YClip = new THREE.Vector3(0,-1,0);
                 app.ClipToLength(currentPoints[1].y,leftTrim,upDirection.y,YClip);
                 app.scene.add(leftTrim);
+                SpawnedDoorTrims.push(leftTrim);
             })
 
+            //Load right trim
             window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
-                let rightTrim = gltf.scene;
+                let loadedScene = gltf.scene;
+                let rightTrim;
+                loadedScene.traverse((child) => {
+                    if(child.isMesh)
+                    {
+                        child.material.color.set(trimColor);
+                        rightTrim = child.parent;
+                    }
+                });
                 rightTrim.rotateZ(Math.PI / 2);
+
+                if (IsX)
+                {
+                    if (rightDirection.x < 0)
+                        rightTrim.rotateX(Math.PI);
+                }
+                else
+                {
+                    if (rightDirection.z < 0)
+                        rightTrim.rotateX(Math.PI / 2);
+                    else
+                        rightTrim.rotateX(-Math.PI / 2);
+                }
+
                 rightTrim.position.copy(currentPoints[2]);
                 rightTrim.position.y += dimensions.x / 2;
                 let YClip = new THREE.Vector3(0,-1,0);
                 app.ClipToLength(currentPoints[2].y,rightTrim,upDirection.y,YClip);
                 app.scene.add(rightTrim);
+                SpawnedDoorTrims.push(rightTrim);
             })
 
+            //Load top trim
             window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
-                let topTrim = gltf.scene;
+                let loadedScene = gltf.scene;
+                let topTrim;
+                loadedScene.traverse((child) => {
+                    if(child.isMesh)
+                    {
+                        child.material.color.set(trimColor);
+                        topTrim = child.parent;
+                    }
+                });
                 topTrim.position.copy(currentPoints[0]);
-                topTrim.position.x += dimensions.x / 2.12;
-                let XClip = new THREE.Vector3(-1,0,0);
-                app.ClipToLength(currentPoints[0].x,topTrim,rightDirection.x +0.1,XClip);
+                if (IsX)
+                {
+                    if (rightDirection.x < 0)
+                        topTrim.rotateX(Math.PI);
+                    topTrim.position.x += dimensions.x / 2;
+                    let XClip = new THREE.Vector3(-1,0,0);
+                    app.ClipToLength(currentPoints[0].x,topTrim,rightDirection.x,XClip);
+                }
+                else
+                {
+                    if (rightDirection.z < 0)
+                        topTrim.rotateY(Math.PI / 2);
+                    else
+                        topTrim.rotateY(-Math.PI/2);
+                    topTrim.position.z += dimensions.x / 2;
+                    let ZClip = new THREE.Vector3(0,0,-1);
+                    app.ClipToLength(currentPoints[0].z,topTrim,rightDirection.z,ZClip);
+                }
+
                 app.scene.add(topTrim);
+                SpawnedDoorTrims.push(topTrim);
             })
         }
 
@@ -1661,8 +1748,12 @@ class App {
                 if (position.x <= highest.x && position.x >= lowest.x
                     &&position.y <= highest.y && position.y >= lowest.y)
                 {
-                    inside = true;
-                    HitPlaneDirection = direction;
+                    let distanceToMarker = Math.abs(currentPoints[0].z - this.reticle.position.z);
+                    if (distanceToMarker < 0.1)
+                    {
+                        inside = true;
+                        HitPlaneDirection = direction;
+                    }
                 }
             }
             else
@@ -1670,8 +1761,12 @@ class App {
                 if (position.z <= highest.z && position.z >= lowest.z
                     && position.y <= highest.y && position.y >= lowest.y)
                 {
-                    inside = true;
-                    HitPlaneDirection = direction;
+                    let distanceToMarker = Math.abs(currentPoints[0].x - this.reticle.position.x);
+                    if (distanceToMarker < 0.1)
+                    {
+                        inside = true;
+                        HitPlaneDirection = direction;
+                    }
                 }
             }
 
