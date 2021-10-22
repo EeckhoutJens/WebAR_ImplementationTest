@@ -1,5 +1,5 @@
 window.gltfLoader = new THREE.GLTFLoader();
-
+window.objectLoader = new THREE.ObjectLoader();
 import {XREstimatedLight} from "./XREstimatedLight.js";
 
 class Reticle extends THREE.Object3D {
@@ -433,14 +433,14 @@ class App {
                 anchoredObject.matrix.set(anchorPose.transform.matrix);
             }
 
-            for (const {anchoredObject, anchor} of SpawnedCeilingTrims)
+            /**for (const {anchoredObject, anchor} of SpawnedCeilingTrims)
             {
                 if (!frame.trackedAnchors.has(anchor)) {
                     continue;
                 }
                 const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
                 anchoredObject.matrix.set(anchorPose.transform.matrix);
-            }
+            }*/
 
             for (const {anchoredObject, anchor} of SpawnedFloorTrims)
             {
@@ -1661,7 +1661,16 @@ class App {
             absDirection.z = Math.abs(absDirection.z);
             let IsX = absDirection.x > absDirection.z;
 
-            this.GenerateTrims(ID, currentPoints[0], direction, absDirection, IsX, DecorationTypes.CeilingTrim);
+            const meshWorker = new Worker('MeshloadingWorker.js');
+            meshWorker.postMessage([ID,currentPoints[0],direction,absDirection,IsX])
+            meshWorker.onmessage = function (e)
+            {
+                window.objectLoader.parse(e.data, function (obj)
+                {
+                    app.scene.add(obj);
+                })
+
+            }
         }
     }
 
