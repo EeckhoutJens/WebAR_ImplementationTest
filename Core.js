@@ -121,6 +121,7 @@ let previewLine;
 //save certain buttons so we can easily keep track of them and manipulate them
 let DoneButton;
 let DoorsButton;
+let WindowsButton;
 
 //Container class to handle WebXR logic
 //Adapted from the AR with WebXR workshop project by Google
@@ -1102,6 +1103,7 @@ class App {
                     loadedScene.traverse((child) => {
                         if(child.isMesh)
                         {
+                            child.castShadow = true;
                             child.material.color.set(trimColor);
                             trimToSpawn = child.parent;
                         }
@@ -1209,9 +1211,9 @@ class App {
                 else
                     trimToSpawn.position.z += dimensions.x / 2;
 
+                app.scene.add(trimToSpawn);
                 const shadowMesh = app.scene.children.find(c => c.name === 'shadowMesh');
                 shadowMesh.position.y = trimToSpawn.position.y
-                app.scene.add(trimToSpawn);
 
                 //Now we load enough meshes to fill up top line of plane
                 for(let i = 1; i <= nrToSpawn; ++i)
@@ -1227,6 +1229,7 @@ class App {
                                 if(child.isMesh)
                                 {
                                     child.material.color.set(trimColor);
+                                    child.castShadow = true;
                                     trimToSpawn2 = child.parent;
                                 }
                             });
@@ -1842,6 +1845,21 @@ class App {
         button.onclick = function ()
         {
             app.SelectDoorsClicked();
+        }
+
+        document.body.appendChild(button);
+        DoorsButton = button;
+    }
+
+    CreateSelectWindowsButton()
+    {
+        let left = 'calc(25% - 50px)';
+        let text = 'Select windows';
+        const button = this.CreateButton(text,left)
+
+        button.onclick = function ()
+        {
+
         }
 
         document.body.appendChild(button);
