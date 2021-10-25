@@ -249,8 +249,6 @@ class App {
     ClipToLength(startPos, object, length, clipNormal)
     {
         let clippingPlane = [new THREE.Plane(clipNormal, startPos + length)];
-        let test = new THREE.PlaneHelper(clippingPlane[0],2,0x0000ff )
-        this.scene.add(test);
 
         object.traverse((child) => {
             if(child.isMesh) {
@@ -708,7 +706,7 @@ class App {
                     let isDirectionX = Math.abs(direction.x) > Math.abs(direction.z);
 
                     if (isDirectionX)
-                        FirstLocation.y = prevPoint.position.y;
+                        FirstLocation.z = prevPoint.position.z;
                     else
                         FirstLocation.x = prevPoint.position.x;
                 }*/
@@ -1626,12 +1624,12 @@ class App {
                                         });
                             })
 
-                            if (currX === nrToSpawnX)
+                            /**if (currX === nrToSpawnX)
                             {
                                 app.ClipToLength(currentPoints[0].x,trimToSpawn2 ,length,clipNormal) ;
                             }
 
-                           /** if (currY === nrToSpawnY)
+                             if (currY === nrToSpawnY)
                             {
                                 let YClipNorm = new THREE.Vector3(0,-1,0);
                                 app.ClipToLength(currentPoints[0].y,trimToSpawn2 ,YDistance,YClipNorm) ;
@@ -1661,16 +1659,7 @@ class App {
             absDirection.z = Math.abs(absDirection.z);
             let IsX = absDirection.x > absDirection.z;
 
-            const meshWorker = new Worker('MeshloadingWorker.js');
-            meshWorker.postMessage([ID,currentPoints[0],direction,absDirection,IsX])
-            meshWorker.onmessage = function (e)
-            {
-                window.objectLoader.parse(e.data, function (obj)
-                {
-                    app.scene.add(obj);
-                })
-
-            }
+            this.GenerateTrims(ID, currentPoints[0], direction, absDirection, IsX, DecorationTypes.CeilingTrim);
         }
     }
 

@@ -6,11 +6,19 @@ self.gltfLoader.setPath('3D/');
 onmessage = function(e)
 {
     console.log("Worker received message");
-    GenerateTrims(e.data[0],e.data[1],e.data[2], e.data[3], e.data[4]);
+    GenerateTrims(e.data[0],e.data[1],e.data[2]);
 }
 
-GenerateTrims = function (ID, StartPosition,direction, absDirection,IsX)
+GenerateTrims = function (ID, StartPosition,direction)
 {
+
+    let absDirection = new THREE.Vector3(0,0,0);
+    absDirection.copy(direction);
+    absDirection.x = Math.abs(absDirection.x);
+    absDirection.y = Math.abs(absDirection.y);
+    absDirection.z = Math.abs(absDirection.z);
+    let IsX = absDirection.x > absDirection.z;
+
     let positionOffset = new THREE.Vector3(0,0,0);
     let nrToSpawn = 0;
     let length;
@@ -72,8 +80,10 @@ GenerateTrims = function (ID, StartPosition,direction, absDirection,IsX)
         --nrToSpawn;
 
         if (nrToSpawn <= 0) {
-            if (IsX) {
-                if (direction.x < 0) {
+            if (IsX)
+            {
+                if (direction.x < 0)
+                {
                     trimToSpawn.position.x -= length;
                     length = 0;
                 }
@@ -87,6 +97,8 @@ GenerateTrims = function (ID, StartPosition,direction, absDirection,IsX)
 
         }
 
+        length -= dimensions.x / 2;
+
         if (IsX)
             trimToSpawn.position.x += dimensions.x / 2;
         else
@@ -94,7 +106,8 @@ GenerateTrims = function (ID, StartPosition,direction, absDirection,IsX)
 
         console.log("Sending created trim from worker to core");
         trimToSpawn.updateMatrix();
-        let converted = trimToSpawn.toJSON()
-        postMessage(converted);
+        let convertedtrim = trimToSpawn.toJSON();
+
+        postMessage([convertedtrim,JSON.stringify(length),JSON.stringify(clipNormal)]);
     })
 }
