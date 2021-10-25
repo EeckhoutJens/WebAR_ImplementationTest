@@ -822,7 +822,7 @@ class App {
                     ConstrainedYPosWalls = WallPoints[1].anchoredObject.position.y;
 
                     //DELETE - Just added it now for testing purposes
-                    ConstrainedYPosWalls = 1;
+                    //ConstrainedYPosWalls = 1;
 
                     WallHeight = ConstrainedYPosWalls - WallPoints[0].anchoredObject.position.y;
                     this.ResetWallPoints();
@@ -851,11 +851,10 @@ class App {
                 {
                     //Generate top left
                     let topLeftPosition = DoorPoints[0].anchoredObject.position.clone();
-                    topLeftPosition.y = 0.5;
+                    topLeftPosition.y = DoorPoints[1].anchoredObject.position.y;
                     let topLeftSphere = this.CreateSphere(topLeftPosition);
 
                     //Generate bottom right
-                    DoorPoints[1].anchoredObject.position.y = 0.5;
                     let bottomRightPosition = DoorPoints[1].anchoredObject.position.clone();
                     bottomRightPosition.y = DoorPoints[0].anchoredObject.position.y;
                     let bottomRightSphere = this.CreateSphere(bottomRightPosition);
