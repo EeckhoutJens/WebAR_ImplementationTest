@@ -88,13 +88,15 @@ let ConstrainedYPosDoors = 0;
 let PlacingPointsWalls = false;
 let NrOfWalls = 0;
 let PlacedFirstPointWalls = false;
+let TopPoint;
+let BottomPoint;
 
 let PlacingPointsDoors = false;
 let NrOfDoors = 0;
 let PlacedFirstPointDoors = false;
 
 //Third step, if a placed point is close enough to a previous point close off and move to next step
-const MinDistance = 0.2;
+const MinDistance = 0.1;
 let FinishedPlacingWalls = false;
 let FinishedPlacingDoors = true;
 //-------------------------------------------------------------------------------------------------
@@ -388,7 +390,7 @@ class App {
             }
 
             //Draw preview lines while placing points to define walls
-            if (PlacingPointsWalls && PlacedFirstPointWalls)
+            if (PlacingPointsWalls && WallPoints.length !== 0)
             {
                 this.scene.remove(previewLine);
                 let PreviewPoints = [];
@@ -396,11 +398,13 @@ class App {
                 InitialPos.copy(this.reticle.position);
                 InitialPos.y = ConstrainedYPosWalls;
                 PreviewPoints.push(InitialPos);
+                TopPoint = InitialPos;
 
                 let adjustedPos = new THREE.Vector3(0,0,0);
                 adjustedPos.copy(this.reticle.position);
                 adjustedPos.y = ConstrainedYPosWalls - WallHeight;
                 PreviewPoints.push(adjustedPos);
+                BottomPoint = adjustedPos;
 
                 let copiedPos1 = new THREE.Vector3(0,0,0);
                 let copiedPos2 = new THREE.Vector3(0,0,0);
@@ -408,6 +412,22 @@ class App {
 
                 copiedPos1.copy(WallPoints[arrLength - 1].anchoredObject.position);
                 copiedPos2.copy(WallPoints[arrLength - 2].anchoredObject.position);
+
+                let direction = new THREE.Vector3(0,0,0);
+                direction.copy(BottomPoint);
+                direction.sub(copiedPos1);
+                let isDirectionX = Math.abs(direction.x) > Math.abs(direction.z);
+
+                if (isDirectionX)
+                {
+                    TopPoint.z = copiedPos1.z;
+                    BottomPoint.z = copiedPos1.z;
+                }
+                else
+                {
+                    TopPoint.x = copiedPos1.x;
+                    BottomPoint.x = copiedPos1.x;
+                }
 
                 PreviewPoints.push(copiedPos1);
                 PreviewPoints.push(copiedPos2);
@@ -649,43 +669,80 @@ class App {
     {
         if (PlacingPointsWalls)
         {
-            for (const {anchoredObject, anchor} of WallPoints)
-            {
-                let distanceToMarker = anchoredObject.position.distanceToSquared(this.reticle.position);
-                if (distanceToMarker < MinDistance)
+                if (WallPoints.length !== 0)
                 {
-                    FinishedPlacingWalls = true;
-                    PlacingPointsWalls = false;
-                    this.scene.remove(previewLine);
-                    previewLine = null;
-                    this.CreatePlanes();
-                    this.CreateDoneButton();
-                    this.CreateSelectDoorsButton();
-                    document.getElementById("WallsIcon").style.display = "none";
-                    /**
-                    //this.DrawPlanes();
-                    document.getElementById("OpenButton").style.display = "block";
-                    this.CreatePlaceButton();
-                    this.CreateResetButton();
+                    let distanceToMarker = WallPoints[WallPoints.length - 1].anchoredObject.position.distanceToSquared(this.reticle.position);
+                    if (distanceToMarker < MinDistance)
+                    {
+                        FinishedPlacingWalls = true;
+                        PlacingPointsWalls = false;
+                        this.scene.remove(previewLine);
+                        previewLine = null;
+                        this.CreatePlanes();
+                        this.CreateDoneButton();
+                        this.CreateSelectDoorsButton();
+                        document.getElementById("WallsIcon").style.display = "none";
+                    }
 
-                    //Set up colorPicker
-                    gui = new dat.GUI();
+                    distanceToMarker = WallPoints[1].anchoredObject.position.distanceToSquared(this.reticle.position);
+                    if (distanceToMarker < MinDistance)
+                    {
+                        let Point1;
+                        let FirstLocation = new THREE.Vector3(0,0,0);
+                        FirstLocation.copy(WallPoints[0].anchoredObject.position);
+                        Point1 = this.CreateSphere(FirstLocation);
 
-                    //Manually call update so color variable gets properly initalized with the default value of the picker
-                    this.UpdateTrimColor();
-                    this.UpdateDecorationColor();
 
-                    //Set a callback so that whenever user changes a value, it calls the update
-                    gui.addColor(paramsTrimColor, 'trimColor').onChange(this.UpdateTrimColor);
-                    gui.addColor(paramsDecorationColor, 'decorationColor').onChange(this.UpdateDecorationColor);
-                    gui.add(paramsVisibility, 'showGuides').onChange(this.UpdateGuideVisibility);
+                        reticleHitTestResult.createAnchor().then((anchor) =>
+                        {
+                            WallPoints.push({
+                                anchoredObject: Point1,
+                                anchor: anchor
+                            });
+                        });
 
-                    break;*/
+                        let SecondLocation = new THREE.Vector3(0,0,0);
+                        SecondLocation.copy(FirstLocation);
+                        SecondLocation.y = ConstrainedYPosWalls - WallHeight;
+                        let Point2 = this.CreateSphere(SecondLocation);
+                        let hitPose = reticleHitTestResult.getPose(this.localReferenceSpace);
+                        let transformPosition = new THREE.Vector3(0,0,0);
+                        transformPosition.copy(hitPose.transform.position);
+                        transformPosition.y = ConstrainedYPosWalls - WallHeight;
+                        let XRTransform = new XRRigidTransform(transformPosition, hitPose.transform.orientation);
+
+                        reticleHitTestResult.createAnchor(XRTransform, this.localReferenceSpace).then((anchor) =>
+                        {
+                            WallPoints.push({
+                                anchoredObject: Point2,
+                                anchor: anchor
+                            });
+
+                            if (WallPoints.length >= 4)
+                            {
+                                ++NrOfWalls;
+                            }
+                            this.CreatePlanes();
+                            this.CreateDoneButton();
+                            this.CreateSelectDoorsButton();
+                            document.getElementById("WallsIcon").style.display = "none";
+                        });
+
+                        FinishedPlacingWalls = true;
+                        PlacingPointsWalls = false;
+                        let test = previewLine.clone();
+                        this.scene.remove(previewLine);
+                        this.scene.add(test);
+                        WallLines.push(test);
+                        previewLine = null;
+                    }
                 }
-            }
+
+
             if (!FinishedPlacingWalls)
             {
                 let Point1;
+                let Point2;
                 let FirstLocation = new THREE.Vector3(0,0,0);
                 FirstLocation.copy(this.reticle.position);
                 FirstLocation.y = ConstrainedYPosWalls;
@@ -696,22 +753,11 @@ class App {
                     PlacedFirstPointWalls = true;
                 }
 
-                /**else
-                 {
-                    let IndexPrevPoint = WallPoints.length - 2;
-                    let prevPoint = WallPoints[IndexPrevPoint].anchoredObject;
-                    let direction = new THREE.Vector3(0,0,0);
-                    direction.copy(FirstLocation);
-                    direction.sub(prevPoint.position);
-                    let isDirectionX = Math.abs(direction.x) > Math.abs(direction.z);
 
-                    if (isDirectionX)
-                        FirstLocation.z = prevPoint.position.z;
-                    else
-                        FirstLocation.x = prevPoint.position.x;
-                }*/
-
-                Point1 = this.CreateSphere(FirstLocation);
+                if (TopPoint)
+                    Point1 = this.CreateSphere(TopPoint);
+                else
+                    Point1 = this.CreateSphere(FirstLocation);
 
 
                 reticleHitTestResult.createAnchor().then((anchor) =>
@@ -725,7 +771,12 @@ class App {
                 let SecondLocation = new THREE.Vector3(0,0,0);
                 SecondLocation.copy(FirstLocation);
                 SecondLocation.y = ConstrainedYPosWalls - WallHeight;
-                let Point2 = this.CreateSphere(SecondLocation);
+
+                if (BottomPoint)
+                 Point2 = this.CreateSphere(BottomPoint);
+                else
+                    Point2 = this.CreateSphere(SecondLocation);
+
                 let hitPose = reticleHitTestResult.getPose(this.localReferenceSpace);
                 let transformPosition = new THREE.Vector3(0,0,0);
                 transformPosition.copy(hitPose.transform.position);
@@ -849,6 +900,15 @@ class App {
             DoorPoints[i].anchor.delete();
         }
         DoorPoints.length = 0;
+    }
+
+    ResetDoorTrims()
+    {
+        for (let i = 0 ; i < SpawnedDoorTrims.length; ++i)
+        {
+            this.scene.remove(SpawnedDoorTrims[i]);
+        }
+        SpawnedDoorTrims.length = 0;
     }
 
     ResetCeilingTrims()
@@ -1088,7 +1148,7 @@ class App {
                 if (direction.z > 0)
                     clipNormal = new THREE.Vector3(0,0,-1);
                 else
-                    clipNormal = new THREE.Vector3(0,0,1);
+                    clipNormal = new THREE.Vector3(0,0,-1);
             }
 
             //Initial load so we can use data to calculate additional nr of meshes we might need to load after this
@@ -1188,9 +1248,16 @@ class App {
                         }
                         app.ClipToLength(StartPosition.x,trimToSpawn ,length,clipNormal);
                     }
-
                     else
+                    {
+                        if (direction.z < 0)
+                        {
+                            trimToSpawn.position.z -= length;
+                            length = 0;
+                        }
                         app.ClipToLength(StartPosition.z,trimToSpawn ,length,clipNormal);
+                    }
+
                 }
                 else
                 {
@@ -1318,6 +1385,7 @@ class App {
         //1 (left), 0 (top), 2 (right)
         //Iterate over each door or keep it unique per door?
         //Needs direction (X or Z)
+        this.ResetDoorTrims();
         for(let currentPlane = 0; currentPlane < DoorPlanes.length; ++currentPlane)
         {
             let currentPoints = DoorPlanes[currentPlane];
@@ -1924,6 +1992,7 @@ class App {
         this.ResetWallTrims();
         this.ResetCeilingTrims();
         this.ResetFloorTrims();
+        this.ResetDoorTrims();
     }
 
     DoneClicked()
