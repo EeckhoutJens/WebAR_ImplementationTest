@@ -1347,7 +1347,7 @@ class App {
                 });
                 box = new THREE.Box3().setFromObject(leftTrim);
                 box.getSize(dimensions);
-                leftTrim.rotateZ(Math.PI / 2);
+                leftTrim.rotateZ(-Math.PI / 2);
                 leftTrim.rotateX(-Math.PI);
 
                 if (IsX)
