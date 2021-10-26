@@ -248,9 +248,16 @@ class App {
 
     }
 
-    ClipToLength(startPos, object, length, clipNormal)
+    ClipToLength(startPos, object, length, clipNormal, createHelper)
     {
         let clippingPlane = [new THREE.Plane(clipNormal, startPos + length)];
+
+        if (createHelper)
+        {
+            let test = new THREE.PlaneHelper(clippingPlane[0],2,0x0000ff )
+            this.scene.add(test);
+        }
+
 
         object.traverse((child) => {
             if(child.isMesh) {
@@ -671,7 +678,7 @@ class App {
         {
                 if (WallPoints.length !== 0)
                 {
-                    let distanceToMarker = WallPoints[WallPoints.length - 1].anchoredObject.position.distanceToSquared(this.reticle.position);
+                    let distanceToMarker = WallPoints[WallPoints.length - 2].anchoredObject.position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         FinishedPlacingWalls = true;
@@ -684,7 +691,7 @@ class App {
                         document.getElementById("WallsIcon").style.display = "none";
                     }
 
-                    distanceToMarker = WallPoints[1].anchoredObject.position.distanceToSquared(this.reticle.position);
+                    distanceToMarker = WallPoints[0].anchoredObject.position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         let Point1;
@@ -822,7 +829,7 @@ class App {
                     ConstrainedYPosWalls = WallPoints[1].anchoredObject.position.y;
 
                     //DELETE - Just added it now for testing purposes
-                    ConstrainedYPosWalls = 1;
+                    //ConstrainedYPosWalls = 1;
 
                     WallHeight = ConstrainedYPosWalls - WallPoints[0].anchoredObject.position.y;
                     this.ResetWallPoints();
@@ -1136,19 +1143,9 @@ class App {
             let length;
             let clipNormal;
             if (IsX)
-            {
-                if (direction.x > 0)
-                    clipNormal = new THREE.Vector3(-1,0,0);
-                else
-                    clipNormal = new THREE.Vector3(-1,0,0);
-            }
+                clipNormal = new THREE.Vector3(-1,0,0);
             else
-            {
-                if (direction.z > 0)
-                    clipNormal = new THREE.Vector3(0,0,-1);
-                else
-                    clipNormal = new THREE.Vector3(0,0,-1);
-            }
+                clipNormal = new THREE.Vector3(0,0,-1);
 
             //Initial load so we can use data to calculate additional nr of meshes we might need to load after this
             window.gltfLoader.load(ID + ".gltf", function (gltf)
@@ -1245,7 +1242,7 @@ class App {
                             trimToSpawn.position.x -= length;
                             length = 0;
                         }
-                        app.ClipToLength(StartPosition.x,trimToSpawn ,length,clipNormal);
+                        app.ClipToLength(StartPosition.x,trimToSpawn ,length,clipNormal,false);
                     }
                     else
                     {
@@ -1254,7 +1251,7 @@ class App {
                             trimToSpawn.position.z -= length;
                             length = 0;
                         }
-                        app.ClipToLength(StartPosition.z,trimToSpawn ,length,clipNormal);
+                        app.ClipToLength(StartPosition.z,trimToSpawn ,length,clipNormal,false);
                     }
 
                 }
@@ -1266,6 +1263,10 @@ class App {
                         {
                             trimToSpawn.position.x -= dimensions.x;
                         }
+                    }
+                    else if (direction.z < 0)
+                    {
+                        trimToSpawn.position.z -= dimensions.x;
                     }
 
                 }
@@ -1302,11 +1303,7 @@ class App {
                             trimToSpawn2 = loadedScene;
 
                         trimToSpawn2.position.copy(StartPosition);
-                        if (decoType === DecorationTypes.Decoration)
-                        {
-                            trimToSpawn2.position.z += dimensions.y / 2;
-                            trimToSpawn2.rotateX(Math.PI / 2);
-                        }
+
                         trimToSpawn2.position.addScaledVector(positionOffset,i);
                         if (IsX)
                         {
@@ -1365,9 +1362,25 @@ class App {
                         if (i === nrToSpawn)
                         {
                             if (IsX)
-                                app.ClipToLength(StartPosition.x,trimToSpawn2 ,length,clipNormal);
+                            {
+                                if (direction.x < 0)
+                                {
+                                   //app.ClipToLength(StartPosition.x,trimToSpawn2 ,-length,clipNormal,true);
+                                }
+
+                                else
+                                    app.ClipToLength(StartPosition.x,trimToSpawn2 ,length,clipNormal,false);
+                            }
+
                             else
-                                app.ClipToLength(StartPosition.z,trimToSpawn2 ,length,clipNormal);
+                            {
+                                if (direction.z < 0)
+                                {
+                                    //app.ClipToLength(StartPosition.z,trimToSpawn2 ,-length,clipNormal,true);
+                                }
+                                else
+                                    app.ClipToLength(StartPosition.z,trimToSpawn2 ,length,clipNormal,false);
+                            }
                         }
 
                         const shadowMesh = app.scene.children.find(c => c.name === 'shadowMesh');
@@ -1433,7 +1446,7 @@ class App {
                 leftTrim.position.copy(currentPoints[1]);
                 leftTrim.position.y += dimensions.x / 2;
                 let YClip = new THREE.Vector3(0,-1,0);
-                app.ClipToLength(currentPoints[1].y,leftTrim,upDirection.y,YClip);
+                app.ClipToLength(currentPoints[1].y,leftTrim,upDirection.y,YClip,false);
                 app.scene.add(leftTrim);
                 SpawnedDoorTrims.push(leftTrim);
             })
@@ -1468,7 +1481,7 @@ class App {
                 rightTrim.position.copy(currentPoints[2]);
                 rightTrim.position.y += dimensions.x / 2;
                 let YClip = new THREE.Vector3(0,-1,0);
-                app.ClipToLength(currentPoints[2].y,rightTrim,upDirection.y,YClip);
+                app.ClipToLength(currentPoints[2].y,rightTrim,upDirection.y,YClip,false);
                 app.scene.add(rightTrim);
                 SpawnedDoorTrims.push(rightTrim);
             })
@@ -1492,7 +1505,7 @@ class App {
                         topTrim.rotateX(Math.PI);
                     topTrim.position.x += dimensions.x / 2;
                     let XClip = new THREE.Vector3(-1,0,0);
-                    app.ClipToLength(currentPoints[0].x,topTrim,rightDirection.x,XClip);
+                    app.ClipToLength(currentPoints[0].x,topTrim,rightDirection.x,XClip,false);
                 }
                 else
                 {
@@ -1502,7 +1515,7 @@ class App {
                         topTrim.rotateY(-Math.PI/2);
                     topTrim.position.z += dimensions.x / 2;
                     let ZClip = new THREE.Vector3(0,0,-1);
-                    app.ClipToLength(currentPoints[0].z,topTrim,rightDirection.z,ZClip);
+                    app.ClipToLength(currentPoints[0].z,topTrim,rightDirection.z,ZClip,false);
                 }
 
                 app.scene.add(topTrim);
@@ -1640,7 +1653,6 @@ class App {
 
                 app.scene.add(trimToSpawn);
 
-
                 //Now we load enough meshes to fill up top line of plane
 
                 for(let currY = 0; currY < nrToSpawnY; ++currY)
@@ -1777,7 +1789,7 @@ class App {
             let IsX = absDirection.x > absDirection.z;
             let startPoint = new THREE.Vector3(0,0,0);
             startPoint.copy(currentPoints[0]);
-            startPoint.y = 0.25;
+            startPoint.y = this.reticle.position.y;
 
             this.GenerateTrims(ID, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
         }
