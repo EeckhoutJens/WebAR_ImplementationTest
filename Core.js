@@ -822,7 +822,7 @@ class App {
                     ConstrainedYPosWalls = WallPoints[1].anchoredObject.position.y;
 
                     //DELETE - Just added it now for testing purposes
-                    //ConstrainedYPosWalls = 1;
+                    ConstrainedYPosWalls = 1;
 
                     WallHeight = ConstrainedYPosWalls - WallPoints[0].anchoredObject.position.y;
                     this.ResetWallPoints();
@@ -1550,7 +1550,7 @@ class App {
             Up.copy(currentPoints[1]);
             Up.sub(currentPoints[0]);
 
-            let YDistance = Math.abs(Up.z);
+            let YDistance = Math.abs(Up.y);
 
             if (SpawnedFloorTrims.length !== 0)
             {
@@ -1622,7 +1622,16 @@ class App {
 
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawnX;
-                --nrToSpawnY;
+
+                if (IsX)
+                {
+                    if (direction.x < 0)
+                    {
+                        trimToSpawn.position.x -= dimensions.x;
+                    }
+                }
+                else if (direction.z < 0)
+                    trimToSpawn.position.z -= dimensions.x;
 
                 if (IsX)
                     trimToSpawn.position.x += dimensions.x / 2;
@@ -1768,7 +1777,7 @@ class App {
             let IsX = absDirection.x > absDirection.z;
             let startPoint = new THREE.Vector3(0,0,0);
             startPoint.copy(currentPoints[0]);
-            startPoint.y = this.reticle.position.y;
+            startPoint.y = 0.25;
 
             this.GenerateTrims(ID, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
         }
