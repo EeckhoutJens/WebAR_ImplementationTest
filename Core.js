@@ -678,7 +678,7 @@ class App {
         {
                 if (WallPoints.length !== 0)
                 {
-                    let distanceToMarker = WallPoints[WallPoints.length - 2].anchoredObject.position.distanceToSquared(this.reticle.position);
+                    let distanceToMarker = WallPoints[WallPoints.length - 1].anchoredObject.position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         FinishedPlacingWalls = true;
@@ -691,14 +691,13 @@ class App {
                         document.getElementById("WallsIcon").style.display = "none";
                     }
 
-                    distanceToMarker = WallPoints[0].anchoredObject.position.distanceToSquared(this.reticle.position);
+                    distanceToMarker = WallPoints[1].anchoredObject.position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         let Point1;
                         let FirstLocation = new THREE.Vector3(0,0,0);
-                        FirstLocation.copy(WallPoints[0].anchoredObject.position);
+                        FirstLocation.copy(TopPoint);
                         Point1 = this.CreateSphere(FirstLocation);
-
 
                         reticleHitTestResult.createAnchor().then((anchor) =>
                         {
@@ -829,7 +828,7 @@ class App {
                     ConstrainedYPosWalls = WallPoints[1].anchoredObject.position.y;
 
                     //DELETE - Just added it now for testing purposes
-                    //ConstrainedYPosWalls = 1;
+                    ConstrainedYPosWalls = 1;
 
                     WallHeight = ConstrainedYPosWalls - WallPoints[0].anchoredObject.position.y;
                     this.ResetWallPoints();
@@ -1178,7 +1177,7 @@ class App {
                     if (direction.x < 0)
                     {
                         trimToSpawn.rotateY(Math.PI);
-                        positionOffset.x = -dimensions.x;
+                        positionOffset.x = dimensions.x;
                     }
                     else
                     {
@@ -1193,7 +1192,7 @@ class App {
                     if (direction.z < 0)
                     {
                         trimToSpawn.rotateY(Math.PI / 2)
-                        positionOffset.z = -dimensions.x;
+                        positionOffset.z = dimensions.x;
                     }
                     if (direction.z > 0)
                     {
@@ -1237,27 +1236,28 @@ class App {
                 {
                     if (IsX)
                     {
-                        if (direction.x < 0)
+                        /**if (direction.x < 0)
                         {
                             trimToSpawn.position.x -= length;
                             length = 0;
-                        }
+                        }*/
                         app.ClipToLength(StartPosition.x,trimToSpawn ,length,clipNormal,false);
                     }
                     else
                     {
+                        /**
                         if (direction.z < 0)
                         {
                             trimToSpawn.position.z -= length;
                             length = 0;
-                        }
+                        }*/
                         app.ClipToLength(StartPosition.z,trimToSpawn ,length,clipNormal,false);
                     }
 
                 }
                 else
                 {
-                    if (IsX)
+                    /**if (IsX)
                     {
                         if (direction.x < 0)
                         {
@@ -1267,7 +1267,7 @@ class App {
                     else if (direction.z < 0)
                     {
                         trimToSpawn.position.z -= dimensions.x;
-                    }
+                    }*/
 
                 }
 
@@ -1310,7 +1310,7 @@ class App {
                             if (direction.x < 0)
                             {
                                 trimToSpawn2.rotateY(Math.PI);
-                                trimToSpawn2.position.x -= dimensions.x / 2;
+                                trimToSpawn2.position.x += dimensions.x / 2;
                             }
                             else
                             {
@@ -1323,7 +1323,7 @@ class App {
                             if (direction.z < 0)
                             {
                                 trimToSpawn2.rotateY(Math.PI / 2)
-                                trimToSpawn2.position.z -= dimensions.x / 2;
+                                trimToSpawn2.position.z += dimensions.x / 2;
                             }
                             if (direction.z > 0)
                             {
@@ -1365,7 +1365,7 @@ class App {
                             {
                                 if (direction.x < 0)
                                 {
-                                   //app.ClipToLength(StartPosition.x,trimToSpawn2 ,-length,clipNormal,true);
+                                   app.ClipToLength(StartPosition.x ,trimToSpawn2 ,length,clipNormal,true);
                                 }
 
                                 else
@@ -1376,7 +1376,7 @@ class App {
                             {
                                 if (direction.z < 0)
                                 {
-                                    //app.ClipToLength(StartPosition.z,trimToSpawn2 ,-length,clipNormal,true);
+                                    app.ClipToLength(StartPosition.z,trimToSpawn2 ,length,clipNormal,true);
                                 }
                                 else
                                     app.ClipToLength(StartPosition.z,trimToSpawn2 ,length,clipNormal,false);
@@ -1747,7 +1747,19 @@ class App {
             absDirection.z = Math.abs(absDirection.z);
             let IsX = absDirection.x > absDirection.z;
 
-            this.GenerateTrims(ID, currentPoints[0], direction, absDirection, IsX, DecorationTypes.CeilingTrim);
+            let startPosition = currentPoints[0];
+            if (IsX)
+            {
+                if (direction.x < 0)
+                    startPosition = currentPoints[3];
+            }
+            else
+            {
+                if (direction.z < 0)
+                    startPosition = currentPoints[3];
+            }
+
+            this.GenerateTrims(ID,startPosition, direction, absDirection, IsX, DecorationTypes.CeilingTrim);
         }
     }
 
@@ -1767,7 +1779,19 @@ class App {
             absDirection.z = Math.abs(absDirection.z);
             let IsX = absDirection.x > absDirection.z;
 
-            this.GenerateTrims(ID, currentPoints[1], direction, absDirection, IsX, DecorationTypes.FloorTrim);
+            let startPosition = currentPoints[1];
+            if (IsX)
+            {
+                if (direction.x < 0)
+                    startPosition = currentPoints[2];
+            }
+            else
+            {
+                if (direction.z < 0)
+                    startPosition = currentPoints[2];
+            }
+
+            this.GenerateTrims(ID, startPosition, direction, absDirection, IsX, DecorationTypes.FloorTrim);
         }
     }
 
@@ -1787,9 +1811,23 @@ class App {
             absDirection.y = Math.abs(absDirection.y);
             absDirection.z = Math.abs(absDirection.z);
             let IsX = absDirection.x > absDirection.z;
+            let startPosition = currentPoints[0];
+            if (IsX)
+            {
+                if (direction.x < 0)
+                    startPosition = currentPoints[3];
+            }
+            else
+            {
+                if (direction.z < 0)
+                    startPosition = currentPoints[3];
+            }
+
+
             let startPoint = new THREE.Vector3(0,0,0);
-            startPoint.copy(currentPoints[0]);
-            startPoint.y = this.reticle.position.y;
+
+            startPoint.copy(startPosition);
+            startPoint.y = 0.25;
 
             this.GenerateTrims(ID, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
         }
