@@ -258,9 +258,9 @@ class App {
             this.scene.add(test);
         }
 
-
         object.traverse((child) => {
             if(child.isMesh) {
+                child.material = child.material.clone();
                 if (child.material.clippingPlanes === null)
                     child.material.clippingPlanes = clippingPlane;
 
@@ -1135,7 +1135,7 @@ class App {
         }
     }
 
-    GenerateTrims(ID, StartPosition, direction, absDirection,IsX, decoType)
+    GenerateTrims(Trim, StartPosition, direction, absDirection,IsX, decoType)
     {
             let positionOffset = new THREE.Vector3(0,0,0);
             let nrToSpawn = 0;
@@ -1147,23 +1147,7 @@ class App {
                 clipNormal = new THREE.Vector3(0,0,-1);
 
             //Initial load so we can use data to calculate additional nr of meshes we might need to load after this
-            window.gltfLoader.load(ID + ".gltf", function (gltf)
-            {
-                let loadedScene = gltf.scene;
-                let trimToSpawn;
-                if (decoType !== DecorationTypes.UplightTrim)
-                {
-                    loadedScene.traverse((child) => {
-                        if(child.isMesh)
-                        {
-                            child.castShadow = true;
-                            child.material.color.set(trimColor);
-                            trimToSpawn = child.parent;
-                        }
-                    });
-                }
-                else
-                    trimToSpawn = loadedScene;
+                let trimToSpawn = Trim.clone();
 
                 trimToSpawn.position.copy(StartPosition);
                 let box = new THREE.Box3().setFromObject(trimToSpawn);
@@ -1277,30 +1261,14 @@ class App {
                     trimToSpawn.position.z += dimensions.x / 2;
 
                 app.scene.add(trimToSpawn);
-                const shadowMesh = app.scene.children.find(c => c.name === 'shadowMesh');
-                shadowMesh.position.y = trimToSpawn.position.y
 
-                //Now we load enough meshes to fill up top line of plane
+                /**const shadowMesh = app.scene.children.find(c => c.name === 'shadowMesh');
+                shadowMesh.position.y = trimToSpawn.position.y*/
+
+                //Now we clone enough meshes to fill up top line of plane
                 for(let i = 1; i <= nrToSpawn; ++i)
                 {
-                    window.gltfLoader.load(ID + ".gltf", function (gltf2)
-                    {
-                        let loadedScene = gltf2.scene;
-                        let trimToSpawn2;
-
-                        if (decoType !== DecorationTypes.UplightTrim)
-                        {
-                            loadedScene.traverse((child) => {
-                                if(child.isMesh)
-                                {
-                                    child.material.color.set(trimColor);
-                                    child.castShadow = true;
-                                    trimToSpawn2 = child.parent;
-                                }
-                            });
-                        }
-                        else
-                            trimToSpawn2 = loadedScene;
+                        let trimToSpawn2 = Trim.clone();
 
                         trimToSpawn2.position.copy(StartPosition);
 
@@ -1383,12 +1351,10 @@ class App {
                             }
                         }
 
-                        const shadowMesh = app.scene.children.find(c => c.name === 'shadowMesh');
-                        shadowMesh.position.y = trimToSpawn2.position.y
+                        /**const shadowMesh = app.scene.children.find(c => c.name === 'shadowMesh');
+                        shadowMesh.position.y = trimToSpawn2.position.y*/
                         app.scene.add(trimToSpawn2);
-                    })
                 }
-            })
     }
 
     GenerateDoorTrims(ID)
@@ -1659,17 +1625,7 @@ class App {
                 {
                     for(let currX = 0; currX <= nrToSpawnX; ++currX)
                     {
-                        window.gltfLoader.load(ID + ".gltf", function (gltf2)
-                        {
-                            let loadedScene = gltf2.scene;
-                            let trimToSpawn2;
-                            loadedScene.traverse((child) => {
-                                if(child.isMesh)
-                                {
-                                    child.material.color = decorationColor;
-                                    trimToSpawn2 = child.parent;
-                                }
-                            });
+                            let trimToSpawn2 = trimToSpawn.clone();
                             trimToSpawn2.position.copy(currentPos);
                             if (currY === 0 && currX === 0 )
                             {
@@ -1712,19 +1668,7 @@ class App {
                                         });
                             })
 
-                            /**if (currX === nrToSpawnX)
-                            {
-                                app.ClipToLength(currentPoints[0].x,trimToSpawn2 ,length,clipNormal) ;
-                            }
-
-                             if (currY === nrToSpawnY)
-                            {
-                                let YClipNorm = new THREE.Vector3(0,-1,0);
-                                app.ClipToLength(currentPoints[0].y,trimToSpawn2 ,YDistance,YClipNorm) ;
-                            }*/
-
                             app.scene.add(trimToSpawn2);
-                        })
                     }
                 }
             })
@@ -1734,103 +1678,151 @@ class App {
     GenerateCeilingTrims(ID)
     {
         this.ResetCeilingTrims();
-        for(let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
-        {
-            let currentPoints = WallPlanes[currentPlane];
+        window.gltfLoader.load(ID + ".gltf", function (gltf) {
+            let loadedScene = gltf.scene;
+            let trimToSpawn;
+            if (decoType !== DecorationTypes.UplightTrim) {
+                loadedScene.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.color.set(trimColor);
+                        trimToSpawn = child.parent;
+                    }
+                });
+            } else
+                trimToSpawn = loadedScene;
 
-            //Check direction of plane
-            let direction = this.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
-            let absDirection = new THREE.Vector3(0,0,0);
-            absDirection.copy(direction);
-            absDirection.x = Math.abs(absDirection.x);
-            absDirection.y = Math.abs(absDirection.y);
-            absDirection.z = Math.abs(absDirection.z);
-            let IsX = absDirection.x > absDirection.z;
-
-            let startPosition = currentPoints[0];
-            if (IsX)
+            for(let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
             {
-                if (direction.x < 0)
-                    startPosition = currentPoints[3];
-            }
-            else
-            {
-                if (direction.z < 0)
-                    startPosition = currentPoints[3];
-            }
+                let currentPoints = WallPlanes[currentPlane];
 
-            this.GenerateTrims(ID,startPosition, direction, absDirection, IsX, DecorationTypes.CeilingTrim);
-        }
+                //Check direction of plane
+                let direction = app.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
+                let absDirection = new THREE.Vector3(0,0,0);
+                absDirection.copy(direction);
+                absDirection.x = Math.abs(absDirection.x);
+                absDirection.y = Math.abs(absDirection.y);
+                absDirection.z = Math.abs(absDirection.z);
+                let IsX = absDirection.x > absDirection.z;
+
+                let startPosition = currentPoints[0];
+                if (IsX)
+                {
+                    if (direction.x < 0)
+                        startPosition = currentPoints[3];
+                }
+                else
+                {
+                    if (direction.z < 0)
+                        startPosition = currentPoints[3];
+                }
+
+                app.GenerateTrims(trimToSpawn,startPosition, direction, absDirection, IsX, DecorationTypes.CeilingTrim);
+            }
+        })
+
     }
 
     GenerateFloorTrims(ID)
     {
         this.ResetFloorTrims();
-        for(let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
-        {
-            let currentPoints = WallPlanes[currentPlane];
 
-            //Check direction of plane
-            let direction = this.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
-            let absDirection = new THREE.Vector3(0,0,0);
-            absDirection.copy(direction);
-            absDirection.x = Math.abs(absDirection.x);
-            absDirection.y = Math.abs(absDirection.y);
-            absDirection.z = Math.abs(absDirection.z);
-            let IsX = absDirection.x > absDirection.z;
+        window.gltfLoader.load(ID + ".gltf", function (gltf) {
+            let loadedScene = gltf.scene;
+            let trimToSpawn;
+            if (decoType !== DecorationTypes.UplightTrim) {
+                loadedScene.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.color.set(trimColor);
+                        trimToSpawn = child.parent;
+                    }
+                });
+            } else
+                trimToSpawn = loadedScene;
 
-            let startPosition = currentPoints[1];
-            if (IsX)
+            for(let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
             {
-                if (direction.x < 0)
-                    startPosition = currentPoints[2];
-            }
-            else
-            {
-                if (direction.z < 0)
-                    startPosition = currentPoints[2];
-            }
+                let currentPoints = WallPlanes[currentPlane];
 
-            this.GenerateTrims(ID, startPosition, direction, absDirection, IsX, DecorationTypes.FloorTrim);
-        }
+                //Check direction of plane
+                let direction = app.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
+                let absDirection = new THREE.Vector3(0,0,0);
+                absDirection.copy(direction);
+                absDirection.x = Math.abs(absDirection.x);
+                absDirection.y = Math.abs(absDirection.y);
+                absDirection.z = Math.abs(absDirection.z);
+                let IsX = absDirection.x > absDirection.z;
+
+                let startPosition = currentPoints[1];
+                if (IsX)
+                {
+                    if (direction.x < 0)
+                        startPosition = currentPoints[2];
+                }
+                else
+                {
+                    if (direction.z < 0)
+                        startPosition = currentPoints[2];
+                }
+
+                app.GenerateTrims(trimToSpawn, startPosition, direction, absDirection, IsX, DecorationTypes.FloorTrim);
+            }
+        })
+
+
     }
 
     //Ensure to change Z to Y when testing vertical planes
     GenerateWallTrims(ID)
     {
         this.ResetWallTrims();
-        for(let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
-        {
-            let currentPoints = WallPlanes[currentPlane];
 
-            //Check direction of plane
-            let direction = this.CalculatePlaneDirection(currentPoints[1], currentPoints[2]);
-            let absDirection = new THREE.Vector3(0,0,0);
-            absDirection.copy(direction);
-            absDirection.x = Math.abs(absDirection.x);
-            absDirection.y = Math.abs(absDirection.y);
-            absDirection.z = Math.abs(absDirection.z);
-            let IsX = absDirection.x > absDirection.z;
-            let startPosition = currentPoints[0];
-            if (IsX)
+        window.gltfLoader.load(ID + ".gltf", function (gltf) {
+            let loadedScene = gltf.scene;
+            let trimToSpawn;
+            if (decoType !== DecorationTypes.UplightTrim) {
+                loadedScene.traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.color.set(trimColor);
+                        trimToSpawn = child.parent;
+                    }
+                });
+            } else
+                trimToSpawn = loadedScene;
+
+
+            for(let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
             {
-                if (direction.x < 0)
-                    startPosition = currentPoints[3];
+                let currentPoints = WallPlanes[currentPlane];
+
+                //Check direction of plane
+                let direction = app.CalculatePlaneDirection(currentPoints[1], currentPoints[2]);
+                let absDirection = new THREE.Vector3(0,0,0);
+                absDirection.copy(direction);
+                absDirection.x = Math.abs(absDirection.x);
+                absDirection.y = Math.abs(absDirection.y);
+                absDirection.z = Math.abs(absDirection.z);
+                let IsX = absDirection.x > absDirection.z;
+                let startPosition = currentPoints[0];
+                if (IsX)
+                {
+                    if (direction.x < 0)
+                        startPosition = currentPoints[3];
+                }
+                else
+                {
+                    if (direction.z < 0)
+                        startPosition = currentPoints[3];
+                }
+
+
+                let startPoint = new THREE.Vector3(0,0,0);
+
+                startPoint.copy(startPosition);
+                startPoint.y = 0.25;
+
+                app.GenerateTrims(trimToSpawn, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
             }
-            else
-            {
-                if (direction.z < 0)
-                    startPosition = currentPoints[3];
-            }
-
-
-            let startPoint = new THREE.Vector3(0,0,0);
-
-            startPoint.copy(startPosition);
-            startPoint.y = 0.25;
-
-            this.GenerateTrims(ID, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
-        }
+        })
     }
 
     //Ensure to change Z to Y when testing vertical planes
