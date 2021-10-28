@@ -28,8 +28,9 @@ class Reticle extends THREE.Object3D {
 
 //Global variables (Should try to get rid of these)
 const WallPoints = [];
-const WallPlanes = [];
+const WallPlanePoints = [];
 const WallLines = [];
+const WallPlanes = [];
 
 const DoorPoints = [];
 const DoorPlanes = [];
@@ -110,6 +111,7 @@ let pmremGenerator;
 
 //Variables to control GUI
 let gui;
+let paramsWallColor = {wallColor: "#919197"}
 let paramsTrimColor = {trimColor: "#919197" };
 let paramsDecorationColor = {decorationColor: "#919197" };
 let paramsVisibility = {showGuides: true};
@@ -663,6 +665,16 @@ class App {
             }
     }
 
+    UpdateWallColor()
+    {
+        let WallColor = new THREE.Color(paramsWallColor.wallColor);
+
+        for (let i = 0; i < WallPlanes.length; ++i)
+        {
+            WallPlanes[i].material.color.set(WallColor);
+        }
+    }
+
     /** Place a point when the screen is tapped.
      * Once 2 or more points have been placed create lines*/
         //Ensure to change Z to Y when testing vertical planes
@@ -978,9 +990,47 @@ class App {
             planePoints.push(WallPoints[startIndex + 1].anchoredObject.position)
             planePoints.push(WallPoints[startIndex + 3].anchoredObject.position)
             planePoints.push(WallPoints[startIndex + 2].anchoredObject.position)
-            WallPlanes.push(planePoints);
+            WallPlanePoints.push(planePoints);
+            let right = this.CalculatePlaneDirection(planePoints[1],planePoints[2])
+            let up = this.CalculatePlaneDirection(planePoints[1],planePoints[0]);
+            let width;
+            let IsX;
+            IsX = Math.abs(right.x) > Math.abs(right.z)
+            if (IsX)
+                width = Math.abs(right.x);
+            else
+                width = Math.abs(right.z);
+
+
+            const geometry = new THREE.PlaneGeometry(width,up.y);
+
+            const material = new THREE.MeshBasicMaterial( {color: 0xff0000, side: THREE.DoubleSide} );
+            const plane = new THREE.Mesh( geometry, material );
+            plane.position.copy(planePoints[1]);
+            if (IsX)
+            {
+                if(right.x < 0)
+                    plane.position.x -= width / 2;
+                else
+                    plane.position.x += width / 2;
+            }
+
+            else
+            {
+                plane.rotateY(Math.PI / 2);
+                if (right.z < 0)
+                    plane.position.z -= width / 2;
+                else
+                    plane.position.z += width / 2;
+            }
+
+            plane.position.y += up.y / 2;
+            this.scene.add( plane );
+            WallPlanes.push(plane);
+
             startIndex += 2;
         }
+
     }
 
     DrawDoor()
@@ -1003,9 +1053,9 @@ class App {
 
     DrawPlanes()
     {
-        for(let i = 0; i < WallPlanes.length; ++i)
+        for(let i = 0; i < WallPlanePoints.length; ++i)
         {
-            var Points = WallPlanes[i];
+            var Points = WallPlanePoints[i];
             var linePoints = [];
             for(let j = 0; j < Points.length; ++j)
             {
@@ -1495,13 +1545,13 @@ class App {
     FillPlane(ID)
     {
         this.ResetDecorations();
-        for (let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
+        for (let currentPlane = 0; currentPlane < WallPlanePoints.length; ++currentPlane)
         {
             let nrToSpawnX;
             let nrToSpawnY;
             let positionOffset = new THREE.Vector3(0,0,0);
             let length;
-            let currentPoints = WallPlanes[currentPlane];
+            let currentPoints = WallPlanePoints[currentPlane];
             let currentPos = new THREE.Vector3(0, 0, 0);
             let clipNormal;
             currentPos.copy(currentPoints[0]);
@@ -1691,9 +1741,9 @@ class App {
             } else
                 trimToSpawn = loadedScene;
 
-            for(let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
+            for(let currentPlane = 0; currentPlane < WallPlanePoints.length; ++currentPlane)
             {
-                let currentPoints = WallPlanes[currentPlane];
+                let currentPoints = WallPlanePoints[currentPlane];
 
                 //Check direction of plane
                 let direction = app.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
@@ -1739,9 +1789,9 @@ class App {
             } else
                 trimToSpawn = loadedScene;
 
-            for(let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
+            for(let currentPlane = 0; currentPlane < WallPlanePoints.length; ++currentPlane)
             {
-                let currentPoints = WallPlanes[currentPlane];
+                let currentPoints = WallPlanePoints[currentPlane];
 
                 //Check direction of plane
                 let direction = app.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
@@ -1790,9 +1840,9 @@ class App {
                 trimToSpawn = loadedScene;
 
 
-            for(let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
+            for(let currentPlane = 0; currentPlane < WallPlanePoints.length; ++currentPlane)
             {
-                let currentPoints = WallPlanes[currentPlane];
+                let currentPoints = WallPlanePoints[currentPlane];
 
                 //Check direction of plane
                 let direction = app.CalculatePlaneDirection(currentPoints[1], currentPoints[2]);
@@ -1829,11 +1879,11 @@ class App {
     IsInPlane(position)
     {
         var inside = false;
-        for(var currentPlaneId = 0; currentPlaneId < WallPlanes.length;++currentPlaneId)
+        for(var currentPlaneId = 0; currentPlaneId < WallPlanePoints.length;++currentPlaneId)
         {
             var highest = new THREE.Vector3(0,0,0);
             var lowest = new THREE.Vector3(0,0,0);
-            var currentPoints = WallPlanes[currentPlaneId];
+            var currentPoints = WallPlanePoints[currentPlaneId];
             highest.copy(currentPoints[0]);
             lowest.copy(currentPoints[0]);
             for(var i = 0; i < currentPoints.length; ++i)
@@ -2061,10 +2111,12 @@ class App {
         //Manually call update so color variable gets properly initalized with the default value of the picker
         this.UpdateTrimColor();
         this.UpdateDecorationColor();
+        this.UpdateWallColor();
 
         //Set a callback so that whenever user changes a value, it calls the update
         gui.addColor(paramsTrimColor, 'trimColor').onChange(this.UpdateTrimColor);
         gui.addColor(paramsDecorationColor, 'decorationColor').onChange(this.UpdateDecorationColor);
+        gui.addColor(paramsWallColor, 'wallColor').onChange(this.UpdateWallColor);
         gui.add(paramsVisibility, 'showGuides').onChange(this.UpdateGuideVisibility);
     }
 
