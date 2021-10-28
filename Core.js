@@ -108,6 +108,7 @@ let HitPlaneDirection;
 let IsDirectionX = false;
 let CurrentFrame;
 let pmremGenerator;
+let all_previous_anchors = new Set();
 
 //Variables to control GUI
 let gui;
@@ -420,8 +421,8 @@ class App {
                 let copiedPos2 = new THREE.Vector3(0,0,0);
                 let arrLength = WallPoints.length;
 
-                copiedPos1.copy(WallPoints[arrLength - 1].anchoredObject.position);
-                copiedPos2.copy(WallPoints[arrLength - 2].anchoredObject.position);
+                copiedPos1.copy(WallPoints[arrLength - 1].position);
+                copiedPos2.copy(WallPoints[arrLength - 2].position);
 
                 let direction = new THREE.Vector3(0,0,0);
                 direction.copy(BottomPoint);
@@ -452,49 +453,32 @@ class App {
 
             // only update the object's position if it's still in the list
             // of frame.trackedAnchors
-            for (const {anchoredObject, anchor} of WallPoints)
-            {
-                if (!frame.trackedAnchors.has(anchor)) {
-                    continue;
-                }
-                const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
-                anchoredObject.matrix.set(anchorPose.transform.matrix);
-            }
+            // Update the position of all the anchored objects based on the currently reported positions of their anchors
+            const tracked_anchors = frame.trackedAnchors;
+            if(tracked_anchors){
+                all_previous_anchors.forEach(anchor => {
+                    if(!tracked_anchors.has(anchor)){
+                        this.scene.remove(anchor.sceneObject);
+                    }
+                });
 
-            /**for (const {anchoredObject, anchor} of SpawnedCeilingTrims)
-            {
-                if (!frame.trackedAnchors.has(anchor)) {
-                    continue;
-                }
-                const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
-                anchoredObject.matrix.set(anchorPose.transform.matrix);
-            }*/
+                tracked_anchors.forEach(anchor => {
+                    const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
+                    if (anchorPose) {
+                        anchor.context.sceneObject.matrix.set(anchorPose.transform.matrix);
+                        anchor.context.sceneObject.visible = true;
+                    } else {
+                        anchor.context.sceneObject.visible = false;
+                    }
+                });
 
-            for (const {anchoredObject, anchor} of SpawnedFloorTrims)
-            {
-                if (!frame.trackedAnchors.has(anchor)) {
-                    continue;
-                }
-                const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
-                anchoredObject.matrix.set(anchorPose.transform.matrix);
-            }
+                all_previous_anchors = tracked_anchors;
+            } else {
+                all_previous_anchors.forEach(anchor => {
+                    this.scene.remove(anchor.sceneObject);
+                });
 
-            for (const {anchoredObject, anchor} of SpawnedWallTrims)
-            {
-                if (!frame.trackedAnchors.has(anchor)) {
-                    continue;
-                }
-                const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
-                anchoredObject.matrix.set(anchorPose.transform.matrix);
-            }
-
-            for (const {anchoredObject, anchor} of SpawnedDecorations)
-            {
-                if (!frame.trackedAnchors.has(anchor)) {
-                    continue;
-                }
-                const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
-                anchoredObject.matrix.set(anchorPose.transform.matrix);
+                all_previous_anchors = new Set();
             }
 
 
@@ -657,7 +641,7 @@ class App {
 
             for (let currentPoint = 0; currentPoint < WallPoints.length; ++currentPoint)
             {
-                WallPoints[currentPoint].anchoredObject.visible = isActive;
+                WallPoints[currentPoint].visible = isActive;
             }
 
             for (let currentLine = 0; currentLine < WallLines.length; ++currentLine)
@@ -668,7 +652,7 @@ class App {
 
     UpdatePlaneFill()
     {
-        for (let currentPlane = 0; currentPlane < WallPlanes; ++currentPlane)
+        for (let currentPlane = 0; currentPlane < WallPlanes.length; ++currentPlane)
         {
             WallPlanes[currentPlane].visible = paramsFillPlanes.fillPlanes;
         }
@@ -687,19 +671,19 @@ class App {
     /** Place a point when the screen is tapped.
      * Once 2 or more points have been placed create lines*/
         //Ensure to change Z to Y when testing vertical planes
-    onSelect = () =>
+    onSelect = (event) =>
     {
-        this.HandleWallSelection();
-        this.HandleDoorSelection();
+        this.HandleWallSelection(event);
+        this.HandleDoorSelection(event);
     }
 
-    HandleWallSelection()
+    HandleWallSelection(event)
     {
         if (PlacingPointsWalls)
         {
                 if (WallPoints.length !== 0)
                 {
-                    let distanceToMarker = WallPoints[WallPoints.length - 1].anchoredObject.position.distanceToSquared(this.reticle.position);
+                    let distanceToMarker = WallPoints[WallPoints.length - 1].position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         FinishedPlacingWalls = true;
@@ -712,7 +696,7 @@ class App {
                         document.getElementById("WallsIcon").style.display = "none";
                     }
 
-                    distanceToMarker = WallPoints[1].anchoredObject.position.distanceToSquared(this.reticle.position);
+                    distanceToMarker = WallPoints[1].position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         let Point1;
@@ -720,30 +704,37 @@ class App {
                         FirstLocation.copy(TopPoint);
                         Point1 = this.CreateSphere(FirstLocation);
 
-                        reticleHitTestResult.createAnchor().then((anchor) =>
-                        {
-                            WallPoints.push({
-                                anchoredObject: Point1,
-                                anchor: anchor
-                            });
-                        });
-
                         let SecondLocation = new THREE.Vector3(0,0,0);
                         SecondLocation.copy(FirstLocation);
                         SecondLocation.y = ConstrainedYPosWalls - WallHeight;
                         let Point2 = this.CreateSphere(SecondLocation);
-                        let hitPose = reticleHitTestResult.getPose(this.localReferenceSpace);
-                        let transformPosition = new THREE.Vector3(0,0,0);
-                        transformPosition.copy(hitPose.transform.position);
-                        transformPosition.y = ConstrainedYPosWalls - WallHeight;
-                        let XRTransform = new XRRigidTransform(transformPosition, hitPose.transform.orientation);
 
-                        reticleHitTestResult.createAnchor(XRTransform, this.localReferenceSpace).then((anchor) =>
-                        {
-                            WallPoints.push({
-                                anchoredObject: Point2,
-                                anchor: anchor
-                            });
+                        //Code copied from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
+                        let frame = event.frame;
+                        let anchorPose = new XRRigidTransform();
+                        let inputSource = event.inputSource;
+
+                        // If the user is on a screen based device, place the anchor 1 meter in front of them.
+                        // Otherwise place the anchor at the location of the input device
+                        if (inputSource.targetRayMode === 'screen') {
+                            anchorPose = new XRRigidTransform(
+                                {x: 0, y: 0, z: -1},
+                                {x: 0, y: 0, z: 0, w: 1});
+                        }
+
+                        // Create a free-floating anchor.
+                        frame.createAnchor(anchorPose, inputSource.targetRaySpace).then((anchor) => {
+                            anchor.context = {};
+                            anchor.context.sceneObject = Point1;
+                            Point1.anchor = anchor;
+                            WallPoints.push(Point1);
+                        })
+
+                        frame.createAnchor(anchorPose, inputSource.targetRaySpace).then((anchor) => {
+                            anchor.context = {};
+                            anchor.context.sceneObject = Point2;
+                            Point2.anchor = anchor;
+                            WallPoints.push(Point2);
 
                             if (WallPoints.length >= 4)
                             {
@@ -753,8 +744,7 @@ class App {
                             this.CreateDoneButton();
                             this.CreateSelectDoorsButton();
                             document.getElementById("WallsIcon").style.display = "none";
-                        });
-
+                        })
                         FinishedPlacingWalls = true;
                         PlacingPointsWalls = false;
                         let test = previewLine.clone();
@@ -762,9 +752,9 @@ class App {
                         this.scene.add(test);
                         WallLines.push(test);
                         previewLine = null;
+
                     }
                 }
-
 
             if (!FinishedPlacingWalls)
             {
@@ -786,14 +776,27 @@ class App {
                 else
                     Point1 = this.CreateSphere(FirstLocation);
 
+                //Code copied from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
+                let frame = event.frame;
+                let anchorPose = new XRRigidTransform();
+                let inputSource = event.inputSource;
 
-                reticleHitTestResult.createAnchor().then((anchor) =>
-                {
-                    WallPoints.push({
-                        anchoredObject: Point1,
-                        anchor: anchor
-                    });
-                });
+                // If the user is on a screen based device, place the anchor 1 meter in front of them.
+                // Otherwise place the anchor at the location of the input device
+                if (inputSource.targetRayMode === 'screen') {
+                    anchorPose = new XRRigidTransform(
+                        {x: 0, y: 0, z: -1},
+                        {x: 0, y: 0, z: 0, w: 1});
+                }
+
+                // Create a free-floating anchor.
+                frame.createAnchor(anchorPose, inputSource.targetRaySpace).then((anchor) => {
+                    anchor.context = {};
+                    anchor.context.sceneObject = Point1;
+                    Point1.anchor = anchor;
+                    WallPoints.push(Point1);
+                })
+
 
                 let SecondLocation = new THREE.Vector3(0,0,0);
                 SecondLocation.copy(FirstLocation);
@@ -804,24 +807,20 @@ class App {
                 else
                     Point2 = this.CreateSphere(SecondLocation);
 
-                let hitPose = reticleHitTestResult.getPose(this.localReferenceSpace);
-                let transformPosition = new THREE.Vector3(0,0,0);
-                transformPosition.copy(hitPose.transform.position);
-                transformPosition.y = ConstrainedYPosWalls - WallHeight;
-                let XRTransform = new XRRigidTransform(transformPosition, hitPose.transform.orientation);
-
-                reticleHitTestResult.createAnchor(XRTransform, this.localReferenceSpace).then((anchor) =>
-                {
-                    WallPoints.push({
-                        anchoredObject: Point2,
-                        anchor: anchor
-                    });
+                // Create a free-floating anchor.
+                frame.createAnchor(anchorPose, inputSource.targetRaySpace).then((anchor) => {
+                    anchor.context = {};
+                    anchor.context.sceneObject = Point2;
+                    Point2.anchor = anchor;
+                    WallPoints.push(Point2);
 
                     if (WallPoints.length >= 4)
                     {
                         ++NrOfWalls;
                     }
-                });
+                })
+
+
 
                 if (WallPoints.length > 0)
                 {
@@ -837,32 +836,51 @@ class App {
         if (IsDeterminingHeightWalls)
         {
             let createdSphere = this.CreateSphere(this.reticle.position);
-            reticleHitTestResult.createAnchor().then((anchor) =>
-            {
-                WallPoints.push({
-                    anchoredObject: createdSphere,
-                    anchor: anchor
-                });
 
-                if (WallPoints.length === 2)
+            //Code copied from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
+            let frame = event.frame;
+            let anchorPose = new XRRigidTransform();
+            let inputSource = event.inputSource;
+
+            // If the user is on a screen based device, place the anchor 1 meter in front of them.
+            // Otherwise place the anchor at the location of the input device
+            if (inputSource.targetRayMode === 'screen') {
+                anchorPose = new XRRigidTransform(
+                    {x: 0, y: 0, z: -1},
+                    {x: 0, y: 0, z: 0, w: 1});
+            }
+
+                // Create a free-floating anchor.
+                frame.createAnchor(anchorPose, inputSource.targetRaySpace).then((anchor) =>
                 {
-                    ConstrainedYPosWalls = WallPoints[1].anchoredObject.position.y;
+                    anchor.context = {};
+                    anchor.context.sceneObject = createdSphere;
+                    createdSphere.anchor = anchor;
 
-                    //DELETE - Just added it now for testing purposes
-                    ConstrainedYPosWalls = 1;
+                    WallPoints.push(createdSphere);
 
-                    WallHeight = ConstrainedYPosWalls - WallPoints[0].anchoredObject.position.y;
-                    this.ResetWallPoints();
-                    IsDeterminingHeightWalls = false;
-                    PlacingPointsWalls = true;
-                    document.getElementById("HeightIcon").style.display = "none";
-                    document.getElementById("WallsIcon").style.display = "block";
-                }
-            });
+                    if (WallPoints.length === 2)
+                    {
+                        ConstrainedYPosWalls = WallPoints[1].position.y;
+
+                        //DELETE - Just added it now for testing purposes
+                        ConstrainedYPosWalls = 1;
+
+                        WallHeight = ConstrainedYPosWalls - WallPoints[0].position.y;
+                        this.ResetWallPoints();
+                        IsDeterminingHeightWalls = false;
+                        PlacingPointsWalls = true;
+                        document.getElementById("HeightIcon").style.display = "none";
+                        document.getElementById("WallsIcon").style.display = "block";
+                    }
+
+                }, (error) => {
+                    console.error("Could not create anchor: " + error);
+                });
         }
     }
 
-    HandleDoorSelection()
+    HandleDoorSelection(event)
     {
         if (PlacingPointsDoors)
         {
@@ -912,7 +930,7 @@ class App {
     {
         for(let i= 0; i < WallPoints.length; ++i)
         {
-            this.scene.remove(WallPoints[i].anchoredObject);
+            this.scene.remove(WallPoints[i]);
             WallPoints[i].anchor.delete();
         }
         WallPoints.length = 0;
@@ -941,8 +959,7 @@ class App {
     {
         for(let i= 0; i < SpawnedCeilingTrims.length; ++i)
         {
-            this.scene.remove(SpawnedCeilingTrims[i].anchoredObject);
-            SpawnedCeilingTrims[i].anchor.delete();
+            this.scene.remove(SpawnedCeilingTrims[i]);
         }
         SpawnedCeilingTrims.length = 0;
     }
@@ -951,8 +968,7 @@ class App {
     {
         for(let i= 0; i < SpawnedFloorTrims.length; ++i)
         {
-            this.scene.remove(SpawnedFloorTrims[i].anchoredObject);
-            SpawnedFloorTrims[i].anchor.delete();
+            this.scene.remove(SpawnedFloorTrims[i]);
         }
         SpawnedFloorTrims.length = 0;
     }
@@ -961,8 +977,7 @@ class App {
     {
         for(let i= 0; i < SpawnedWallTrims.length; ++i)
         {
-            this.scene.remove(SpawnedWallTrims[i].anchoredObject);
-            SpawnedWallTrims[i].anchor.delete();
+            this.scene.remove(SpawnedWallTrims[i]);
         }
         SpawnedWallTrims.length = 0;
     }
@@ -971,8 +986,7 @@ class App {
     {
         for(let i= 0; i < SpawnedDecorations.length; ++i)
         {
-            this.scene.remove(SpawnedDecorations[i].anchoredObject);
-            SpawnedDecorations[i].anchor.delete();
+            this.scene.remove(SpawnedDecorations[i]);
         }
         SpawnedDecorations.length = 0;
     }
@@ -995,10 +1009,10 @@ class App {
             //Add Points that define plane to array and store that array
             //LeftTop - LeftBottom - RightBottom - RightTop
             const planePoints = [];
-            planePoints.push(WallPoints[startIndex].anchoredObject.position);
-            planePoints.push(WallPoints[startIndex + 1].anchoredObject.position)
-            planePoints.push(WallPoints[startIndex + 3].anchoredObject.position)
-            planePoints.push(WallPoints[startIndex + 2].anchoredObject.position)
+            planePoints.push(WallPoints[startIndex].position);
+            planePoints.push(WallPoints[startIndex + 1].position)
+            planePoints.push(WallPoints[startIndex + 3].position)
+            planePoints.push(WallPoints[startIndex + 2].position)
             WallPlanePoints.push(planePoints);
             let right = this.CalculatePlaneDirection(planePoints[1],planePoints[2])
             let up = this.CalculatePlaneDirection(planePoints[1],planePoints[0]);
@@ -1245,33 +1259,20 @@ class App {
                     }
                 }
 
-                let XRTransform = new XRRigidTransform(trimToSpawn.position, trimToSpawn.orientation);
-                reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
-                {
                     switch (decoType)
                     {
                         case DecorationTypes.CeilingTrim:
-                            SpawnedCeilingTrims.push({
-                                anchoredObject: trimToSpawn,
-                                anchor: anchor
-                            });
+                            SpawnedCeilingTrims.push(trimToSpawn);
                             break;
 
                         case DecorationTypes.FloorTrim:
-                            SpawnedFloorTrims.push({
-                                anchoredObject: trimToSpawn,
-                                anchor: anchor
-                            });
+                            SpawnedFloorTrims.push(trimToSpawn);
                             break;
 
                         case DecorationTypes.WallTrim:
-                            SpawnedWallTrims.push({
-                                anchoredObject: trimToSpawn,
-                                anchor: anchor
-                            });
+                            SpawnedWallTrims.push(trimToSpawn);
                             break;
                     }
-                    });
 
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawn;
@@ -1280,38 +1281,12 @@ class App {
                 {
                     if (IsX)
                     {
-                        /**if (direction.x < 0)
-                        {
-                            trimToSpawn.position.x -= length;
-                            length = 0;
-                        }*/
                         app.ClipToLength(StartPosition.x,trimToSpawn ,length,clipNormal,false);
                     }
                     else
                     {
-                        /**
-                        if (direction.z < 0)
-                        {
-                            trimToSpawn.position.z -= length;
-                            length = 0;
-                        }*/
                         app.ClipToLength(StartPosition.z,trimToSpawn ,length,clipNormal,false);
                     }
-
-                }
-                else
-                {
-                    /**if (IsX)
-                    {
-                        if (direction.x < 0)
-                        {
-                            trimToSpawn.position.x -= dimensions.x;
-                        }
-                    }
-                    else if (direction.z < 0)
-                    {
-                        trimToSpawn.position.z -= dimensions.x;
-                    }*/
 
                 }
 
@@ -1321,9 +1296,6 @@ class App {
                     trimToSpawn.position.z += dimensions.x / 2;
 
                 app.scene.add(trimToSpawn);
-
-                /**const shadowMesh = app.scene.children.find(c => c.name === 'shadowMesh');
-                shadowMesh.position.y = trimToSpawn.position.y*/
 
                 //Now we clone enough meshes to fill up top line of plane
                 for(let i = 1; i <= nrToSpawn; ++i)
@@ -1359,33 +1331,21 @@ class App {
                                 trimToSpawn2.position.z += dimensions.x / 2;
                             }
                         }
-                        let XRTransform = new XRRigidTransform(trimToSpawn2.position, trimToSpawn2.orientation);
-                        reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
-                        {
+
                             switch (decoType)
                             {
                                 case DecorationTypes.CeilingTrim:
-                                    SpawnedCeilingTrims.push({
-                                        anchoredObject: trimToSpawn,
-                                        anchor: anchor
-                                    });
+                                    SpawnedCeilingTrims.push(trimToSpawn2);
                                     break;
 
                                 case DecorationTypes.FloorTrim:
-                                    SpawnedFloorTrims.push({
-                                        anchoredObject: trimToSpawn,
-                                        anchor: anchor
-                                    });
+                                    SpawnedFloorTrims.push(trimToSpawn2);
                                     break;
 
                                 case DecorationTypes.WallTrim:
-                                    SpawnedWallTrims.push({
-                                        anchoredObject: trimToSpawn,
-                                        anchor: anchor
-                                    });
-                                    break
+                                    SpawnedWallTrims.push(trimToSpawn2);
+                                    break;
                             }
-                        });
 
                         if (i === nrToSpawn)
                         {
@@ -1410,9 +1370,6 @@ class App {
                                     app.ClipToLength(StartPosition.z,trimToSpawn2 ,length,clipNormal,false);
                             }
                         }
-
-                        /**const shadowMesh = app.scene.children.find(c => c.name === 'shadowMesh');
-                        shadowMesh.position.y = trimToSpawn2.position.y*/
                         app.scene.add(trimToSpawn2);
                 }
     }
@@ -1650,14 +1607,7 @@ class App {
                     }
                 }
 
-                let XRTransform = new XRRigidTransform(trimToSpawn.position, trimToSpawn.orientation);
-                reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) => {
-
-                            SpawnedDecorations.push({
-                                anchoredObject: trimToSpawn,
-                                anchor: anchor
-                            });
-                });
+                SpawnedDecorations.push(trimToSpawn)
 
                 //Decrement nr by one seeing as we already spawned one to get the data
                 --nrToSpawnX;
@@ -1719,15 +1669,8 @@ class App {
                                     trimToSpawn2.position.z += dimensions.x / 2;
                                 }
                             }
-                            let XRTransform = new XRRigidTransform(trimToSpawn2.position, trimToSpawn2.orientation);
-                            reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
-                            {
-                                        SpawnedDecorations.push({
-                                            anchoredObject: trimToSpawn2,
-                                            anchor: anchor
-                                        });
-                            })
 
+                            SpawnedDecorations.push(trimToSpawn2);
                             app.scene.add(trimToSpawn2);
                     }
                 }
