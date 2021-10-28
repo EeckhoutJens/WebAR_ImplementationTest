@@ -114,6 +114,7 @@ let gui;
 let paramsWallColor = {wallColor: "#919197"}
 let paramsTrimColor = {trimColor: "#919197" };
 let paramsDecorationColor = {decorationColor: "#919197" };
+let paramsFillPlanes = {fillPlanes: false};
 let paramsVisibility = {showGuides: true};
 let trimColor;
 let decorationColor;
@@ -665,6 +666,14 @@ class App {
             }
     }
 
+    UpdatePlaneFill()
+    {
+        for (let currentPlane = 0; currentPlane < WallPlanes; ++currentPlane)
+        {
+            WallPlanes[currentPlane].visible = paramsFillPlanes.fillPlanes;
+        }
+    }
+
     UpdateWallColor()
     {
         let WallColor = new THREE.Color(paramsWallColor.wallColor);
@@ -1025,6 +1034,7 @@ class App {
             }
 
             plane.position.y += up.y / 2;
+            plane.visible = false;
             this.scene.add( plane );
             WallPlanes.push(plane);
 
@@ -2117,6 +2127,7 @@ class App {
         gui.addColor(paramsTrimColor, 'trimColor').onChange(this.UpdateTrimColor);
         gui.addColor(paramsDecorationColor, 'decorationColor').onChange(this.UpdateDecorationColor);
         gui.addColor(paramsWallColor, 'wallColor').onChange(this.UpdateWallColor);
+        gui.add(paramsFillPlanes,'fillPlanes').onChange(this.UpdatePlaneFill);
         gui.add(paramsVisibility, 'showGuides').onChange(this.UpdateGuideVisibility);
     }
 
