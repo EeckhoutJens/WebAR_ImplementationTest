@@ -103,6 +103,8 @@ let FinishedPlacingDoors = true;
 //-------------------------------------------------------------------------------------------------
 
 let ModelID;
+let isMovingTrim;
+let inEditMode = false;
 let SpawnedDecorations = [];
 let HitPlaneDirection;
 let IsDirectionX = false;
@@ -110,8 +112,11 @@ let CurrentFrame;
 let pmremGenerator;
 let all_previous_anchors = new Set();
 
-//Variables to control GUI
-let gui;
+//GUI
+let defaultGui;
+let transformGui;
+
+//Default GUI parameters
 let paramsWallColor = {wallColor: "#919197"}
 let paramsTrimColor = {trimColor: "#919197" };
 let paramsDecorationColor = {decorationColor: "#919197" };
@@ -119,6 +124,9 @@ let paramsFillPlanes = {fillPlanes: false};
 let paramsVisibility = {showGuides: true};
 let trimColor;
 let decorationColor;
+
+//Transform GUI parameters
+let paramsWallTrimHeight = {height: 0.5};
 
 let defaultEnv;
 let stats = new Stats();
@@ -128,6 +136,9 @@ let previewLine;
 let DoneButton;
 let DoorsButton;
 let WindowsButton;
+let PlaceButton;
+let ResetButton;
+let MoveButton;
 
 //Container class to handle WebXR logic
 //Adapted from the AR with WebXR workshop project by Google
@@ -233,14 +244,17 @@ class App {
     //General UI functions
     openNav() {
         document.getElementById("mySidenav").style.width = "250px";
-        gui.hide();
-        document.getElementsByTagName("button")[0].style.display = "none";
+        defaultGui.hide();
+        PlaceButton.style.display = "none";
+        ResetButton.style.display = "none";
     }
 
     closeNav() {
         document.getElementById("mySidenav").style.width = "0";
-        gui.show();
-        document.getElementsByTagName("button")[0].style.display = "block";
+        defaultGui.show();
+        PlaceButton.style.display = "block";
+        ResetButton.style.display = "block";
+
     }
 
     openSub(id)
@@ -333,15 +347,16 @@ class App {
         /** Start a rendering loop using this.onXRFrame. */
 
         //Initialize stats panel
-        stats.showPanel(0);
+        /**stats.showPanel(0);
         stats.dom.style.left = "25px";
         stats.dom.style.top = "700px";
-        document.body.appendChild(stats.dom);
+        document.body.appendChild(stats.dom);*/
 
         this.xrSession.requestAnimationFrame(this.onXRFrame);
 
         this.xrSession.addEventListener("select", this.onSelect);
-
+        this.xrSession.addEventListener("selectstart", this.onSelectStart);
+        this.xrSession.addEventListener("selectend", this.onSelectEnd);
         /** To help with working with 3D on the web, we'll use three.js. */
         this.setupThreeJs();
 
@@ -352,9 +367,6 @@ class App {
      * Called with the time and XRPresentationFrame.
      */
     onXRFrame = (time, frame) => {
-
-        stats.begin();
-
         /** Store current frame*/
         CurrentFrame = frame;
 
@@ -484,8 +496,6 @@ class App {
 
             /** Render the scene with THREE.WebGLRenderer. */
             this.renderer.render(this.scene, this.camera)
-
-            stats.end();
         }
     }
 
@@ -673,8 +683,35 @@ class App {
         //Ensure to change Z to Y when testing vertical planes
     onSelect = (event) =>
     {
-        this.HandleWallSelection(event);
-        this.HandleDoorSelection(event);
+        console.log("Select triggered")
+        if (!FinishedPlacingWalls)
+            this.HandleWallSelection(event);
+
+        if (PlacingPointsDoors)
+            this.HandleDoorSelection(event);
+    }
+
+    onSelectStart = (event) =>
+    {
+        console.log("Select start triggered")
+
+        if (inEditMode)
+        {
+            for (let i = 0; i < SpawnedWallTrims.length; ++i)
+            {
+                let distanceToMarker = SpawnedWallTrims[i].position.distanceToSquared(this.reticle.position);
+                if (distanceToMarker < MinDistance)
+                {
+                    isMovingTrim = true;
+                }
+            }
+        }
+    }
+
+    onSelectEnd = (event) =>
+    {
+        console.log("Select end triggered")
+        isMovingTrim = false;
     }
 
     HandleWallSelection(event)
@@ -723,14 +760,14 @@ class App {
                         }
 
                         // Create a free-floating anchor.
-                        frame.createAnchor(anchorPose, inputSource.targetRaySpace).then((anchor) => {
+                        frame.createAnchor(anchorPose, this.localReferenceSpace).then((anchor) => {
                             anchor.context = {};
                             anchor.context.sceneObject = Point1;
                             Point1.anchor = anchor;
                             WallPoints.push(Point1);
                         })
 
-                        frame.createAnchor(anchorPose, inputSource.targetRaySpace).then((anchor) => {
+                        frame.createAnchor(anchorPose, this.localReferenceSpace).then((anchor) => {
                             anchor.context = {};
                             anchor.context.sceneObject = Point2;
                             Point2.anchor = anchor;
@@ -756,8 +793,6 @@ class App {
                     }
                 }
 
-            if (!FinishedPlacingWalls)
-            {
                 let Point1;
                 let Point2;
                 let FirstLocation = new THREE.Vector3(0,0,0);
@@ -790,7 +825,7 @@ class App {
                 }
 
                 // Create a free-floating anchor.
-                frame.createAnchor(anchorPose, inputSource.targetRaySpace).then((anchor) => {
+                frame.createAnchor(anchorPose, this.localReferenceSpace).then((anchor) => {
                     anchor.context = {};
                     anchor.context.sceneObject = Point1;
                     Point1.anchor = anchor;
@@ -808,7 +843,7 @@ class App {
                     Point2 = this.CreateSphere(SecondLocation);
 
                 // Create a free-floating anchor.
-                frame.createAnchor(anchorPose, inputSource.targetRaySpace).then((anchor) => {
+                frame.createAnchor(anchorPose, this.localReferenceSpace).then((anchor) => {
                     anchor.context = {};
                     anchor.context.sceneObject = Point2;
                     Point2.anchor = anchor;
@@ -830,28 +865,14 @@ class App {
                     WallLines.push(test);
                     previewLine = null;
                 }
-            }
         }
 
         if (IsDeterminingHeightWalls)
         {
             let createdSphere = this.CreateSphere(this.reticle.position);
 
-            //Code copied from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
-            let frame = event.frame;
-            let anchorPose = new XRRigidTransform();
-            let inputSource = event.inputSource;
-
-            // If the user is on a screen based device, place the anchor 1 meter in front of them.
-            // Otherwise place the anchor at the location of the input device
-            if (inputSource.targetRayMode === 'screen') {
-                anchorPose = new XRRigidTransform(
-                    {x: 0, y: 0, z: -1},
-                    {x: 0, y: 0, z: 0, w: 1});
-            }
-
                 // Create a free-floating anchor.
-                frame.createAnchor(anchorPose, inputSource.targetRaySpace).then((anchor) =>
+                reticleHitTestResult.createAnchor().then((anchor) =>
                 {
                     anchor.context = {};
                     anchor.context.sceneObject = createdSphere;
@@ -882,43 +903,47 @@ class App {
 
     HandleDoorSelection(event)
     {
-        if (PlacingPointsDoors)
-        {
             //Select bottom left - top right
             let createdSphere = this.CreateSphere(this.reticle.position);
-            reticleHitTestResult.createAnchor().then((anchor) => {
-                DoorPoints.push({
-                    anchoredObject: createdSphere,
-                    anchor: anchor
-                });
+
+            //Code copied from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
+            let frame = event.frame;
+            let anchorPose = new XRRigidTransform();
+            let inputSource = event.inputSource;
+
+            // If the user is on a screen based device, place the anchor 1 meter in front of them.
+            // Otherwise place the anchor at the location of the input device
+            if (inputSource.targetRayMode === 'screen') {
+                anchorPose = new XRRigidTransform(
+                    {x: 0, y: 0, z: -1},
+                    {x: 0, y: 0, z: 0, w: 1});
+            }
+
+            // Create a free-floating anchor.
+            frame.createAnchor(anchorPose, this.localReferenceSpace).then((anchor) => {
+                anchor.context = {};
+                anchor.context.sceneObject = createdSphere;
+                createdSphere.anchor = anchor;
+                DoorPoints.push(createdSphere);
 
                 if (DoorPoints.length === 2)
                 {
                     //Generate top left
-                    let topLeftPosition = DoorPoints[0].anchoredObject.position.clone();
-                    topLeftPosition.y = DoorPoints[1].anchoredObject.position.y;
+                    DoorPoints[1].position.y = 0.5;
+                    let topLeftPosition = DoorPoints[0].position.clone();
+                    topLeftPosition.y = DoorPoints[1].position.y;
                     let topLeftSphere = this.CreateSphere(topLeftPosition);
+                    DoorPoints.push(topLeftSphere);
 
                     //Generate bottom right
-                    let bottomRightPosition = DoorPoints[1].anchoredObject.position.clone();
-                    bottomRightPosition.y = DoorPoints[0].anchoredObject.position.y;
+                    let bottomRightPosition = DoorPoints[1].position.clone();
+                    bottomRightPosition.y = DoorPoints[0].position.y;
                     let bottomRightSphere = this.CreateSphere(bottomRightPosition);
-
-
-                    DoorPoints.push({
-                        anchoredObject: topLeftSphere,
-                        anchor: anchor
-                    });
-
-                    DoorPoints.push({
-                        anchoredObject: bottomRightSphere,
-                        anchor: anchor
-                    });
+                    DoorPoints.push(bottomRightSphere);
 
                     this.DrawDoor();
                 }
-            });
-        }
+            })
     }
 
     HandleWindowSelection()
@@ -980,6 +1005,14 @@ class App {
             this.scene.remove(SpawnedWallTrims[i]);
         }
         SpawnedWallTrims.length = 0;
+    }
+
+    MoveWallTrims()
+    {
+        for (let i = 0; i < SpawnedWallTrims.length; ++i)
+        {
+            SpawnedWallTrims[i].position.y = paramsWallTrimHeight.height;
+        }
     }
 
     ResetDecorations()
@@ -1060,11 +1093,11 @@ class App {
     DrawDoor()
     {
         var linePoints = [];
-        linePoints.push(DoorPoints[2].anchoredObject.position.clone());
-        linePoints.push(DoorPoints[0].anchoredObject.position.clone());
-        linePoints.push(DoorPoints[3].anchoredObject.position.clone());
-        linePoints.push(DoorPoints[1].anchoredObject.position.clone());
-        linePoints.push(DoorPoints[2].anchoredObject.position.clone());
+        linePoints.push(DoorPoints[2].position.clone());
+        linePoints.push(DoorPoints[0].position.clone());
+        linePoints.push(DoorPoints[3].position.clone());
+        linePoints.push(DoorPoints[1].position.clone());
+        linePoints.push(DoorPoints[2].position.clone());
 
         const material = new THREE.LineBasicMaterial({color: 0xff0000});
         const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
@@ -1400,14 +1433,15 @@ class App {
             window.gltfLoader.load(ID + ".gltf", function (gltf)
             {
                 let loadedScene = gltf.scene;
-                let leftTrim;
+                let defaultTrim;
                 loadedScene.traverse((child) => {
                     if(child.isMesh)
                     {
                         child.material.color.set(trimColor);
-                        leftTrim = child.parent;
+                        defaultTrim = child.parent;
                     }
                 });
+                let leftTrim = defaultTrim.clone();
                 box = new THREE.Box3().setFromObject(leftTrim);
                 box.getSize(dimensions);
                 leftTrim.rotateZ(-Math.PI / 2);
@@ -1432,20 +1466,9 @@ class App {
                 app.ClipToLength(currentPoints[1].y,leftTrim,upDirection.y,YClip,false);
                 app.scene.add(leftTrim);
                 SpawnedDoorTrims.push(leftTrim);
-            })
 
             //Load right trim
-            window.gltfLoader.load(ID + ".gltf", function (gltf)
-            {
-                let loadedScene = gltf.scene;
-                let rightTrim;
-                loadedScene.traverse((child) => {
-                    if(child.isMesh)
-                    {
-                        child.material.color.set(trimColor);
-                        rightTrim = child.parent;
-                    }
-                });
+                let rightTrim = defaultTrim.clone();
                 rightTrim.rotateZ(Math.PI / 2);
 
                 if (IsX)
@@ -1463,24 +1486,12 @@ class App {
 
                 rightTrim.position.copy(currentPoints[2]);
                 rightTrim.position.y += dimensions.x / 2;
-                let YClip = new THREE.Vector3(0,-1,0);
                 app.ClipToLength(currentPoints[2].y,rightTrim,upDirection.y,YClip,false);
                 app.scene.add(rightTrim);
                 SpawnedDoorTrims.push(rightTrim);
-            })
 
             //Load top trim
-            window.gltfLoader.load(ID + ".gltf", function (gltf)
-            {
-                let loadedScene = gltf.scene;
-                let topTrim;
-                loadedScene.traverse((child) => {
-                    if(child.isMesh)
-                    {
-                        child.material.color.set(trimColor);
-                        topTrim = child.parent;
-                    }
-                });
+                let topTrim = defaultTrim.clone();
                 topTrim.position.copy(currentPoints[0]);
                 if (IsX)
                 {
@@ -1989,28 +2000,58 @@ class App {
     {
         let left = 'calc(50% - 50px)';
         let text = 'Place';
-        const button = this.CreateButton(text,left)
+        PlaceButton = this.CreateButton(text,left);
 
-        button.onclick = function ()
+        PlaceButton.onclick = function ()
         {
             app.PlaceClicked();
         }
 
-        document.body.appendChild(button);
+        document.body.appendChild(PlaceButton);
+    }
+
+    CreateMoveButton()
+    {
+        let left = 'calc(20% - 50px)';
+        let text = 'Edit';
+        MoveButton = this.CreateButton(text,left);
+
+        MoveButton.onclick = function ()
+        {
+            inEditMode = !inEditMode;
+            if (inEditMode)
+            {
+                PlaceButton.style.display = "none";
+                ResetButton.style.display = "none";
+                defaultGui.hide();
+                transformGui.show();
+                paramsWallTrimHeight.height = SpawnedWallTrims[0].position.y;
+            }
+            else
+            {
+                PlaceButton.style.display = "block";
+                ResetButton.style.display = "block";
+                defaultGui.show();
+                transformGui.hide();
+            }
+
+        }
+
+        document.body.appendChild(MoveButton);
     }
 
     CreateResetButton()
     {
         let left = 'calc(85% - 50px)';
         let text = 'Reset';
-        const button = this.CreateButton(text,left)
+        ResetButton = this.CreateButton(text,left)
 
-        button.onclick = function ()
+        ResetButton.onclick = function ()
         {
             app.ResetClicked();
         }
 
-        document.body.appendChild(button);
+        document.body.appendChild(ResetButton);
     }
 
     stylizeElement( element )
@@ -2053,13 +2094,16 @@ class App {
         document.getElementById("OpenButton").style.display = "block";
         this.CreatePlaceButton();
         this.CreateResetButton();
+        this.CreateMoveButton();
         DoneButton.style.display = "none"
         DoorsButton.style.display = 'none';
         PlacingPointsDoors = false;
         this.ResetDoorPoints();
 
         //Set up colorPicker
-        gui = new dat.GUI();
+        defaultGui = new dat.GUI();
+        transformGui = new dat.GUI();
+        transformGui.hide();
 
         //Manually call update so color variable gets properly initalized with the default value of the picker
         this.UpdateTrimColor();
@@ -2067,11 +2111,13 @@ class App {
         this.UpdateWallColor();
 
         //Set a callback so that whenever user changes a value, it calls the update
-        gui.addColor(paramsTrimColor, 'trimColor').onChange(this.UpdateTrimColor);
-        gui.addColor(paramsDecorationColor, 'decorationColor').onChange(this.UpdateDecorationColor);
-        gui.addColor(paramsWallColor, 'wallColor').onChange(this.UpdateWallColor);
-        gui.add(paramsFillPlanes,'fillPlanes').onChange(this.UpdatePlaneFill);
-        gui.add(paramsVisibility, 'showGuides').onChange(this.UpdateGuideVisibility);
+        defaultGui.addColor(paramsTrimColor, 'trimColor').onChange(this.UpdateTrimColor);
+        defaultGui.addColor(paramsDecorationColor, 'decorationColor').onChange(this.UpdateDecorationColor);
+        defaultGui.addColor(paramsWallColor, 'wallColor').onChange(this.UpdateWallColor);
+        defaultGui.add(paramsFillPlanes,'fillPlanes').onChange(this.UpdatePlaneFill);
+        defaultGui.add(paramsVisibility, 'showGuides').onChange(this.UpdateGuideVisibility);
+
+        transformGui.add(paramsWallTrimHeight,'height',ConstrainedYPosWalls - WallHeight,ConstrainedYPosWalls).onChange(this.MoveWallTrims);
     }
 
     SelectDoorsClicked()
