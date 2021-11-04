@@ -1665,7 +1665,6 @@ class App {
                             {
                                 if (direction.x < 0)
                                 {
-                                    trimToSpawn2.rotateY(Math.PI);
                                     trimToSpawn2.position.x -= dimensions.x / 2;
                                 }
                                 else
@@ -1678,12 +1677,10 @@ class App {
                             {
                                 if (direction.z < 0)
                                 {
-                                    trimToSpawn2.rotateY(Math.PI / 2)
                                     trimToSpawn2.position.z -= dimensions.x / 2;
                                 }
                                 if (direction.z > 0)
                                 {
-                                    trimToSpawn2.rotateY(-Math.PI / 2)
                                     trimToSpawn2.position.z += dimensions.x / 2;
                                 }
                             }
