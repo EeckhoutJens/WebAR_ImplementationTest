@@ -43,6 +43,8 @@ const WindowLines = [];
 const SpawnedCeilingTrims = [];
 const SpawnedFloorTrims = [];
 const SpawnedWallTrims = [];
+const ConnectedWallTrims = [];
+let TrimsToMove = [];
 const SpawnedDoorTrims = [];
 
 const SetIDs = [];
@@ -139,6 +141,7 @@ let WindowsButton;
 let PlaceButton;
 let ResetButton;
 let MoveButton;
+let SelectButton;
 
 //Container class to handle WebXR logic
 //Adapted from the AR with WebXR workshop project by Google
@@ -1000,18 +1003,22 @@ class App {
 
     ResetWallTrims()
     {
-        for(let i= 0; i < SpawnedWallTrims.length; ++i)
+        for(let i= 0; i < ConnectedWallTrims.length; ++i)
         {
-            this.scene.remove(SpawnedWallTrims[i]);
+            let currTrimLine = ConnectedWallTrims[i];
+            for (let j = 0; j < currTrimLine.length; ++j)
+            {
+                this.scene.remove(currTrimLine[j]);
+            }
         }
-        SpawnedWallTrims.length = 0;
+        ConnectedWallTrims.length = 0;
     }
 
     MoveWallTrims()
     {
-        for (let i = 0; i < SpawnedWallTrims.length; ++i)
+        for (let i = 0; i < TrimsToMove.length; ++i)
         {
-            SpawnedWallTrims[i].position.y = paramsWallTrimHeight.height;
+            TrimsToMove[i].position.y = paramsWallTrimHeight.height;
         }
     }
 
@@ -1788,7 +1795,7 @@ class App {
     //Ensure to change Z to Y when testing vertical planes
     GenerateWallTrims(ID)
     {
-        this.ResetWallTrims();
+        //this.ResetWallTrims();
 
         window.gltfLoader.load(ID + ".gltf", function (gltf) {
             let loadedScene = gltf.scene;
@@ -1816,7 +1823,7 @@ class App {
                 absDirection.y = Math.abs(absDirection.y);
                 absDirection.z = Math.abs(absDirection.z);
                 let IsX = absDirection.x > absDirection.z;
-                let startPosition = currentPoints[0];
+                let startPosition = currentPoints[1];
                 if (IsX)
                 {
                     if (direction.x < 0)
@@ -1832,10 +1839,13 @@ class App {
                 let startPoint = new THREE.Vector3(0,0,0);
 
                 startPoint.copy(startPosition);
-                startPoint.y = 0.25;
+                //startPoint.y = 0.25;
 
                 app.GenerateTrims(trimToSpawn, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
             }
+
+            ConnectedWallTrims.push([...SpawnedWallTrims]);
+            SpawnedWallTrims.length = 0;
         })
     }
 
@@ -2023,6 +2033,8 @@ class App {
             {
                 PlaceButton.style.display = "none";
                 ResetButton.style.display = "none";
+                document.getElementById("OpenButton").style.display = "none";
+                SelectButton.style.display = "block";
                 defaultGui.hide();
                 transformGui.show();
                 paramsWallTrimHeight.height = SpawnedWallTrims[0].position.y;
@@ -2031,6 +2043,8 @@ class App {
             {
                 PlaceButton.style.display = "block";
                 ResetButton.style.display = "block";
+                document.getElementById("OpenButton").style.display = "block";
+                SelectButton.style.display = "none";
                 defaultGui.show();
                 transformGui.hide();
             }
@@ -2038,6 +2052,20 @@ class App {
         }
 
         document.body.appendChild(MoveButton);
+    }
+
+    CreateSelectButton()
+    {
+        let left = 'calc(50% - 50px)';
+        let text = 'Select';
+        SelectButton = this.CreateButton(text,left);
+
+        SelectButton.onclick = function ()
+        {
+            app.SelectClicked();
+        }
+
+        document.body.appendChild(SelectButton);
     }
 
     CreateResetButton()
@@ -2071,6 +2099,24 @@ class App {
         element.style.zIndex = '999';
     }
 
+    SelectClicked()
+    {
+        for (let i = 0; i < ConnectedWallTrims.length; ++i)
+        {
+            let currentTrims = ConnectedWallTrims[i];
+            for (let j = 0; j < currentTrims.length; ++j)
+            {
+                let distanceToMarker = currentTrims[j].position.distanceToSquared(this.reticle.position);
+                if (distanceToMarker < 0.3)
+                {
+                    TrimsToMove = currentTrims;
+                    paramsWallTrimHeight.height = currentTrims[j].position.y;
+                    return;
+                }
+            }
+        }
+    }
+
     PlaceClicked()
     {
         if (FinishedPlacingWalls)
@@ -2095,8 +2141,10 @@ class App {
         this.CreatePlaceButton();
         this.CreateResetButton();
         this.CreateMoveButton();
+        this.CreateSelectButton();
         DoneButton.style.display = "none"
         DoorsButton.style.display = 'none';
+        SelectButton.style.display = "none";
         PlacingPointsDoors = false;
         this.ResetDoorPoints();
 
