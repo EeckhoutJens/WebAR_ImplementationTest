@@ -968,8 +968,9 @@ class App {
     {
         for(let i= 0; i < DoorPoints.length; ++i)
         {
-            this.scene.remove(DoorPoints[i].anchoredObject);
-            DoorPoints[i].anchor.delete();
+            this.scene.remove(DoorPoints[i]);
+            if (DoorPoints[i].anchor)
+                DoorPoints[i].anchor.delete();
         }
         DoorPoints.length = 0;
     }
@@ -1452,23 +1453,32 @@ class App {
                 box = new THREE.Box3().setFromObject(leftTrim);
                 box.getSize(dimensions);
                 leftTrim.rotateZ(-Math.PI / 2);
-                leftTrim.rotateX(-Math.PI);
+                //leftTrim.rotateX(-Math.PI);
 
+                leftTrim.position.copy(currentPoints[1]);
                 if (IsX)
                 {
                     if (rightDirection.x < 0)
+                    {
                         leftTrim.rotateX(Math.PI);
+                    }
                 }
                 else
                 {
                     if (rightDirection.z < 0)
+                    {
                         leftTrim.rotateX(Math.PI / 2);
+                    }
+
                     else
+                    {
                         leftTrim.rotateX(-Math.PI / 2);
+                    }
                 }
 
-                leftTrim.position.copy(currentPoints[1]);
+
                 leftTrim.position.y += dimensions.x / 2;
+
                 let YClip = new THREE.Vector3(0,-1,0);
                 app.ClipToLength(currentPoints[1].y,leftTrim,upDirection.y,YClip,false);
                 app.scene.add(leftTrim);
@@ -1503,7 +1513,10 @@ class App {
                 if (IsX)
                 {
                     if (rightDirection.x < 0)
+                    {
                         topTrim.rotateX(Math.PI);
+                    }
+
                     topTrim.position.x += dimensions.x / 2;
                     let XClip = new THREE.Vector3(-1,0,0);
                     app.ClipToLength(currentPoints[0].x,topTrim,rightDirection.x,XClip,false);
@@ -1521,6 +1534,38 @@ class App {
 
                 app.scene.add(topTrim);
                 SpawnedDoorTrims.push(topTrim);
+
+                //Load bottom trim
+                let bottomTrim = defaultTrim.clone();
+                bottomTrim.position.copy(currentPoints[1]);
+
+                if (IsX)
+                {
+                    if (rightDirection.x < 0)
+                    {
+                        bottomTrim.rotateX(Math.PI);
+                        bottomTrim.position.x -= dimensions.y;
+                    }
+                    else
+                        bottomTrim.position.x += dimensions.y;
+
+                    bottomTrim.position.x += dimensions.x / 2;
+                    let XClip = new THREE.Vector3(-1,0,0);
+                    app.ClipToLength(currentPoints[0].x,bottomTrim,rightDirection.x,XClip,false);
+                }
+                else
+                {
+                    if (rightDirection.z < 0)
+                        bottomTrim.rotateY(Math.PI / 2);
+                    else
+                        bottomTrim.rotateY(-Math.PI/2);
+                    bottomTrim.position.z += dimensions.x / 2;
+                    let ZClip = new THREE.Vector3(0,0,-1);
+                    app.ClipToLength(currentPoints[0].z,bottomTrim,rightDirection.z,ZClip,false);
+                }
+
+                app.scene.add(bottomTrim);
+                SpawnedDoorTrims.push(bottomTrim);
             })
         }
 
