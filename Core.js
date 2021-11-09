@@ -32,13 +32,9 @@ const WallPlanePoints = [];
 const WallLines = [];
 const WallPlanes = [];
 
-const DoorPoints = [];
-const DoorPlanes = [];
-const DoorLines = [];
-
-const WindowPoints = [];
-const WindowPlanes = [];
-const WindowLines = [];
+const WallframePoints = [];
+const WallframePlanes = [];
+const WallframeLines = [];
 
 const SpawnedCeilingTrims = [];
 const SpawnedFloorTrims = [];
@@ -78,14 +74,11 @@ let reticleHitTestResult;
 //PLANE DETECTION
 //First step, place 2 points to determine the height
 let IsDeterminingHeightWalls = true;
-let IsDeterminingHeightDoors = false;
 
 let WallHeight = 0;
-let DoorHeight = 0;
 
 //Ensures all the dots are placed on the same Y position
 let ConstrainedYPosWalls = 0;
-let ConstrainedYPosDoors = 0;
 
 //Second step, place points in the corners of the walls
 let PlacingPointsWalls = false;
@@ -94,14 +87,11 @@ let PlacedFirstPointWalls = false;
 let TopPoint;
 let BottomPoint;
 
-let PlacingPointsDoors = false;
-let NrOfDoors = 0;
-let PlacedFirstPointDoors = false;
+let PlacingPointsWallframes = false;
 
 //Third step, if a placed point is close enough to a previous point close off and move to next step
 const MinDistance = 0.1;
 let FinishedPlacingWalls = false;
-let FinishedPlacingDoors = true;
 //-------------------------------------------------------------------------------------------------
 
 let ModelID;
@@ -136,7 +126,7 @@ let previewLine;
 
 //save certain buttons so we can easily keep track of them and manipulate them
 let DoneButton;
-let DoorsButton;
+let WallframesButton;
 let WindowsButton;
 let PlaceButton;
 let ResetButton;
@@ -748,8 +738,8 @@ class App {
         if (!FinishedPlacingWalls)
             this.HandleWallSelection(event);
 
-        if (PlacingPointsDoors)
-            this.HandleDoorSelection(event);
+        if (PlacingPointsWallframes)
+            this.HandleWallframeSelection(event);
     }
 
     onSelectStart = (event) =>
@@ -790,7 +780,7 @@ class App {
                         previewLine = null;
                         this.CreatePlanes();
                         this.CreateDoneButton();
-                        this.CreateSelectDoorsButton();
+                        this.CreateSelectWallframesButton();
                         document.getElementById("WallsIcon").style.display = "none";
                     }
 
@@ -840,7 +830,7 @@ class App {
                             }
                             this.CreatePlanes();
                             this.CreateDoneButton();
-                            this.CreateSelectDoorsButton();
+                            this.CreateSelectWallframesButton();
                             document.getElementById("WallsIcon").style.display = "none";
                         })
                         FinishedPlacingWalls = true;
@@ -946,7 +936,7 @@ class App {
                         ConstrainedYPosWalls = WallPoints[1].position.y;
 
                         //DELETE - Just added it now for testing purposes
-                        ConstrainedYPosWalls = 1;
+                        //ConstrainedYPosWalls = 1;
 
                         WallHeight = ConstrainedYPosWalls - WallPoints[0].position.y;
                         this.ResetWallPoints();
@@ -962,7 +952,7 @@ class App {
         }
     }
 
-    HandleDoorSelection(event)
+    HandleWallframeSelection(event)
     {
             //Select bottom left - top right
             let createdSphere = this.CreateSphere(this.reticle.position);
@@ -985,22 +975,22 @@ class App {
                 anchor.context = {};
                 anchor.context.sceneObject = createdSphere;
                 createdSphere.anchor = anchor;
-                DoorPoints.push(createdSphere);
+                WallframePoints.push(createdSphere);
 
-                if (DoorPoints.length === 2)
+                if (WallframePoints.length === 2)
                 {
                     //Generate top left
-                    DoorPoints[1].position.y = 0.5;
-                    let topLeftPosition = DoorPoints[0].position.clone();
-                    topLeftPosition.y = DoorPoints[1].position.y;
+                    //WallframePoints[1].position.y = 0.5;
+                    let topLeftPosition = WallframePoints[0].position.clone();
+                    topLeftPosition.y = WallframePoints[1].position.y;
                     let topLeftSphere = this.CreateSphere(topLeftPosition);
-                    DoorPoints.push(topLeftSphere);
+                    WallframePoints.push(topLeftSphere);
 
                     //Generate bottom right
-                    let bottomRightPosition = DoorPoints[1].position.clone();
-                    bottomRightPosition.y = DoorPoints[0].position.y;
+                    let bottomRightPosition = WallframePoints[1].position.clone();
+                    bottomRightPosition.y = WallframePoints[0].position.y;
                     let bottomRightSphere = this.CreateSphere(bottomRightPosition);
-                    DoorPoints.push(bottomRightSphere);
+                    WallframePoints.push(bottomRightSphere);
 
                     this.DrawDoor();
                 }
@@ -1022,15 +1012,15 @@ class App {
         WallPoints.length = 0;
     }
 
-    ResetDoorPoints()
+    ResetWallframePoints()
     {
-        for(let i= 0; i < DoorPoints.length; ++i)
+        for(let i= 0; i < WallframePoints.length; ++i)
         {
-            this.scene.remove(DoorPoints[i]);
-            if (DoorPoints[i].anchor)
-                DoorPoints[i].anchor.delete();
+            this.scene.remove(WallframePoints[i]);
+            if (WallframePoints[i].anchor)
+                WallframePoints[i].anchor.delete();
         }
-        DoorPoints.length = 0;
+        WallframePoints.length = 0;
     }
 
     ResetDoorTrims()
@@ -1159,19 +1149,19 @@ class App {
     DrawDoor()
     {
         var linePoints = [];
-        linePoints.push(DoorPoints[2].position.clone());
-        linePoints.push(DoorPoints[0].position.clone());
-        linePoints.push(DoorPoints[3].position.clone());
-        linePoints.push(DoorPoints[1].position.clone());
-        linePoints.push(DoorPoints[2].position.clone());
+        linePoints.push(WallframePoints[2].position.clone());
+        linePoints.push(WallframePoints[0].position.clone());
+        linePoints.push(WallframePoints[3].position.clone());
+        linePoints.push(WallframePoints[1].position.clone());
+        linePoints.push(WallframePoints[2].position.clone());
 
         const material = new THREE.LineBasicMaterial({color: 0xff0000});
         const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
         const line = new THREE.Line(geometry,material);
         this.scene.add(line);
-        DoorLines.push(line);
-        DoorPlanes.push(linePoints);
-        this.ResetDoorPoints();
+        WallframeLines.push(line);
+        WallframePlanes.push(linePoints);
+        this.ResetWallframePoints();
     }
 
     DrawPlanes()
@@ -1276,7 +1266,7 @@ class App {
                         break;
 
                     case DecorationTypes.Doortrim:
-                        app.GenerateDoorTrims(ModelID);
+                        app.GenerateWallframeTrims(ModelID);
                         break;
                 }
             });
@@ -1726,23 +1716,26 @@ class App {
 
     }
 
-    GenerateDoorTrims(ID)
+    GenerateWallframeTrims(ID)
     {
         this.ResetDoorTrims();
-        this.GenerateSlicedTrims(ID,DoorPlanes,SpawnedDoorTrims,true);
+        this.GenerateSlicedTrims(ID,WallframePlanes,SpawnedDoorTrims,false);
     }
 
     //Ensure to change Z to Y when testing vertical planes
     FillPlane(ID)
     {
-        this.ResetDecorations();
         for (let currentPlane = 0; currentPlane < WallPlanePoints.length; ++currentPlane)
         {
+            let currentPoints = WallPlanePoints[currentPlane];
+
+            if (!this.IsInSpecificPlane(this.reticle.position,currentPoints))
+                continue;
+
             let nrToSpawnX;
             let nrToSpawnY;
             let positionOffset = new THREE.Vector3(0,0,0);
             let length;
-            let currentPoints = WallPlanePoints[currentPlane];
             let currentPos = new THREE.Vector3(0, 0, 0);
             let clipNormal;
             currentPos.copy(currentPoints[0]);
@@ -2042,7 +2035,7 @@ class App {
                 let startPoint = new THREE.Vector3(0,0,0);
 
                 startPoint.copy(startPosition);
-                //startPoint.y = 0.25;
+                startPoint.y = this.reticle.position.y;
 
                 app.GenerateTrims(trimToSpawn, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
             }
@@ -2058,9 +2051,20 @@ class App {
         var inside = false;
         for(var currentPlaneId = 0; currentPlaneId < WallPlanePoints.length;++currentPlaneId)
         {
+             inside = this.IsInSpecificPlane(position,WallPlanePoints[currentPlaneId]);
+             if (inside)
+                 return inside;
+        }
+
+        return inside;
+    }
+
+    IsInSpecificPlane(position,planePoints)
+    {
+        var inside = false;
             var highest = new THREE.Vector3(0,0,0);
             var lowest = new THREE.Vector3(0,0,0);
-            var currentPoints = WallPlanePoints[currentPlaneId];
+            var currentPoints = planePoints;
             highest.copy(currentPoints[0]);
             lowest.copy(currentPoints[0]);
             for(var i = 0; i < currentPoints.length; ++i)
@@ -2115,8 +2119,6 @@ class App {
                     }
                 }
             }
-
-        }
 
         return inside;
     }
@@ -2179,19 +2181,19 @@ class App {
         DoneButton = button;
     }
 
-    CreateSelectDoorsButton()
+    CreateSelectWallframesButton()
     {
         let left = 'calc(85% - 50px)';
-        let text = 'Select doors';
+        let text = 'Select wallframes';
         const button = this.CreateButton(text,left)
 
         button.onclick = function ()
         {
-            app.SelectDoorsClicked();
+            app.SelectWallframesClicked();
         }
 
         document.body.appendChild(button);
-        DoorsButton = button;
+        WallframesButton = button;
     }
 
     CreateSelectWindowsButton()
@@ -2206,7 +2208,7 @@ class App {
         }
 
         document.body.appendChild(button);
-        DoorsButton = button;
+        WallframesButton = button;
     }
 
     CreatePlaceButton()
@@ -2223,7 +2225,7 @@ class App {
         document.body.appendChild(PlaceButton);
     }
 
-    CreateMoveButton()
+    CreateEditButton()
     {
         let left = 'calc(20% - 50px)';
         let text = 'Edit';
@@ -2250,6 +2252,7 @@ class App {
                 SelectButton.style.display = "none";
                 defaultGui.show();
                 transformGui.hide();
+                app.UpdateTrimColor();
             }
 
         }
@@ -2312,11 +2315,21 @@ class App {
                 let distanceToMarker = currentTrims[j].position.distanceToSquared(this.reticle.position);
                 if (distanceToMarker < 0.3)
                 {
+                    this.UpdateTrimColor();
                     TrimsToMove = currentTrims;
                     paramsWallTrimHeight.height = currentTrims[j].position.y;
+                    this.RecolorSelectedTrims();
                     return;
                 }
             }
+        }
+    }
+
+    RecolorSelectedTrims()
+    {
+        for (let i = 0; i < TrimsToMove.length; ++i)
+        {
+            TrimsToMove[i].children[0].material.color.setHex(0x00FF00);
         }
     }
 
@@ -2343,13 +2356,13 @@ class App {
         document.getElementById("OpenButton").style.display = "block";
         this.CreatePlaceButton();
         this.CreateResetButton();
-        this.CreateMoveButton();
+        this.CreateEditButton();
         this.CreateSelectButton();
         DoneButton.style.display = "none"
-        DoorsButton.style.display = 'none';
+        WallframesButton.style.display = 'none';
         SelectButton.style.display = "none";
-        PlacingPointsDoors = false;
-        this.ResetDoorPoints();
+        PlacingPointsWallframes = false;
+        this.ResetWallframePoints();
         //this.ResetWallPoints();
 
         //Set up colorPicker
@@ -2372,10 +2385,10 @@ class App {
         transformGui.add(paramsWallTrimHeight,'height',ConstrainedYPosWalls - WallHeight,ConstrainedYPosWalls).onChange(this.MoveWallTrims);
     }
 
-    SelectDoorsClicked()
+    SelectWallframesClicked()
     {
-        PlacingPointsDoors = true;
-        DoorsButton.style.display = 'none';
+        PlacingPointsWallframes = true;
+        WallframesButton.style.display = 'none';
     }
 }
 
