@@ -534,7 +534,6 @@ class App {
                     const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
                     if (anchorPose) {
                         anchor.context.sceneObject.matrix.set(anchorPose.transform.matrix);
-                        anchor.context.sceneObject.visible = true;
                     } else {
                         anchor.context.sceneObject.visible = false;
                     }
@@ -651,7 +650,7 @@ class App {
         trimColor = new THREE.Color(paramsTrimColor.trimColor);
         for(let currTrim = 0; currTrim < SpawnedCeilingTrims.length; ++currTrim)
         {
-        SpawnedCeilingTrims[currTrim].anchoredObject.traverse((child) => {
+        SpawnedCeilingTrims[currTrim].traverse((child) => {
             if (child.isMesh)
             {
                 child.material.color.set(trimColor);
@@ -661,20 +660,26 @@ class App {
 
         for(let currTrim = 0; currTrim < SpawnedFloorTrims.length; ++currTrim)
         {
-            SpawnedFloorTrims[currTrim].anchoredObject.traverse((child) => {
+            SpawnedFloorTrims[currTrim].traverse((child) => {
                 if (child.isMesh) {
                     child.material.color.set(trimColor);
                 }
             })
+
         }
 
-        for(let currTrim = 0; currTrim < SpawnedWallTrims.length; ++currTrim)
+        for(let currConnectedTrim = 0; currConnectedTrim < ConnectedWallTrims.length; ++currConnectedTrim)
         {
-            SpawnedWallTrims[currTrim].anchoredObject.traverse((child) => {
-                if (child.isMesh) {
-                    child.material.color.set(trimColor);
-                }
-            })
+            let trims = ConnectedWallTrims[currConnectedTrim];
+            for (let currTrim = 0; currTrim < trims.length; ++currTrim)
+            {
+                trims[currTrim].traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.color.set(trimColor);
+                    }
+                })
+            }
+
         }
 
         for (let currTrim = 0; currTrim < SpawnedDoorTrims.length; ++currTrim)
@@ -692,7 +697,7 @@ class App {
         decorationColor = new THREE.Color(paramsDecorationColor.decorationColor);
         for(let currTrim = 0; currTrim < SpawnedDecorations.length; ++currTrim)
         {
-            SpawnedDecorations[currTrim].anchoredObject.traverse((child) => {
+            SpawnedDecorations[currTrim].traverse((child) => {
                 if (child.isMesh)
                 {
                     child.material.color.set(decorationColor);
@@ -1375,11 +1380,11 @@ class App {
                 {
                     if (IsX)
                     {
-                        app.ClipToLength(StartPosition.x,trimToSpawn ,length,clipNormal,true);
+                        app.ClipToLength(StartPosition.x,trimToSpawn ,length,clipNormal,false);
                     }
                     else
                     {
-                        app.ClipToLength(StartPosition.z,trimToSpawn ,length,clipNormal,true);
+                        app.ClipToLength(StartPosition.z,trimToSpawn ,length,clipNormal,false);
                     }
 
                 }
@@ -1447,21 +1452,21 @@ class App {
                             {
                                 if (direction.x < 0)
                                 {
-                                   app.ClipToLength(StartPosition.x ,trimToSpawn2 ,length,clipNormal,true);
+                                   app.ClipToLength(StartPosition.x ,trimToSpawn2 ,length,clipNormal,false);
                                 }
 
                                 else
-                                    app.ClipToLength(StartPosition.x,trimToSpawn2 ,length,clipNormal,true);
+                                    app.ClipToLength(StartPosition.x,trimToSpawn2 ,length,clipNormal,false);
                             }
 
                             else
                             {
                                 if (direction.z < 0)
                                 {
-                                    app.ClipToLength(StartPosition.z,trimToSpawn2 ,length,clipNormal,true);
+                                    app.ClipToLength(StartPosition.z,trimToSpawn2 ,length,clipNormal,false);
                                 }
                                 else
-                                    app.ClipToLength(StartPosition.z,trimToSpawn2 ,length,clipNormal,true);
+                                    app.ClipToLength(StartPosition.z,trimToSpawn2 ,length,clipNormal,false);
                             }
                         }
                         app.scene.add(trimToSpawn2);
@@ -1745,7 +1750,7 @@ class App {
             //In case ceiling trims are present - make sure decorations spawn below ceiling trim
             if (SpawnedCeilingTrims.length !== 0)
             {
-                let trimBox = new THREE.Box3().setFromObject(SpawnedCeilingTrims[0].anchoredObject);
+                let trimBox = new THREE.Box3().setFromObject(SpawnedCeilingTrims[0]);
                 let trimdimensions = new THREE.Vector3(0, 0, 0);
                 trimBox.getSize(trimdimensions);
                 currentPos.y -= trimdimensions.y;
@@ -1769,7 +1774,7 @@ class App {
 
             if (SpawnedFloorTrims.length !== 0)
             {
-                let trimBox = new THREE.Box3().setFromObject(SpawnedCeilingTrims[0].anchoredObject);
+                let trimBox = new THREE.Box3().setFromObject(SpawnedCeilingTrims[0]);
                 let trimdimensions = new THREE.Vector3(0, 0, 0);
                 trimBox.getSize(trimdimensions);
 
@@ -2345,6 +2350,7 @@ class App {
         SelectButton.style.display = "none";
         PlacingPointsDoors = false;
         this.ResetDoorPoints();
+        //this.ResetWallPoints();
 
         //Set up colorPicker
         defaultGui = new dat.GUI();
