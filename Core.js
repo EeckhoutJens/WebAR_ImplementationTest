@@ -40,6 +40,7 @@ const SpawnedCeilingTrims = [];
 const SpawnedFloorTrims = [];
 const SpawnedWallTrims = [];
 const ConnectedWallTrims = [];
+const ConnectedWallframes =[];
 let TrimsToMove = [];
 const SpawnedDoorTrims = [];
 
@@ -292,7 +293,7 @@ class App {
 
         clipPlane.setFromNormalAndCoplanarPoint(normal,point);
 
-        let clippingPlane = [clipPlane];
+        let clippingPlane = [clipPlane.clone()];
 
         if (createHelper)
         {
@@ -1463,7 +1464,7 @@ class App {
                 }
     }
 
-    GenerateSlicedTrims(ID, planes, trims,isDoors)
+    GenerateSlicedTrims(loadedMesh, planes, trims,isDoors)
     {
         //Need to load 3 trims - left,top,right
         //1 (left), 0 (top), 2 (right)
@@ -1474,7 +1475,6 @@ class App {
             let currentPoints = planes[currentPlane];
 
             let rightDirection = this.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
-            let upDirection = this.CalculatePlaneDirection(currentPoints[1],currentPoints[0]);
             let absRightDirection = new THREE.Vector3(0,0,0);
             absRightDirection.copy(rightDirection);
             absRightDirection.x = Math.abs(absRightDirection.x);
@@ -1486,18 +1486,6 @@ class App {
             let dimensions = new THREE.Vector3(0,0,0);
 
             //Load left trim and get dimensions
-            window.gltfLoader.load(ID + ".gltf", function (gltf)
-            {
-                let loadedScene = gltf.scene;
-                let defaultTrim;
-                loadedScene.traverse((child) => {
-                    if(child.isMesh)
-                    {
-                        child.material.color.set(trimColor);
-                        defaultTrim = child.parent;
-                        child.geometry;
-                    }
-                });
 
                 //Create 3D plane in order to make positioning easier
                 let testPlaneGeom = new THREE.PlaneGeometry(1,1);
@@ -1532,7 +1520,7 @@ class App {
                 }
 
 
-                let leftTrim = defaultTrim.clone();
+                let leftTrim = loadedMesh.clone();
                 box = new THREE.Box3().setFromObject(leftTrim);
                 box.getSize(dimensions);
                 leftTrim.rotateZ(-Math.PI / 2);
@@ -1570,9 +1558,8 @@ class App {
                 if (!isDoors)
                     app.DoorClip(LBPlane,leftTrim,posYClip,false);
 
-                app.scene.add(leftTrim);
-
                 trims.push(leftTrim);
+                app.scene.add(leftTrim);
 
             //Load right trim
 
@@ -1606,7 +1593,7 @@ class App {
 
                 }
 
-                let rightTrim = defaultTrim.clone();
+                let rightTrim = loadedMesh.clone();
                 rightTrim.rotateZ(Math.PI / 2);
 
                 if (IsX)
@@ -1629,11 +1616,11 @@ class App {
                 if (!isDoors)
                     app.DoorClip(RBPlane,rightTrim,posYClip,false);
 
-                app.scene.add(rightTrim);
                 trims.push(rightTrim);
+                app.scene.add(rightTrim);
 
             //Load top trim
-                let topTrim = defaultTrim.clone();
+                let topTrim = loadedMesh.clone();
                 topTrim.position.copy(currentPoints[0]);
                 if (IsX)
                 {
@@ -1662,18 +1649,16 @@ class App {
                         topTrim.rotateY(-Math.PI/2);
                     topTrim.position.z += dimensions.x / 2;
                     topTrim.position.y -= dimensions.y;
-                    let ZClip = new THREE.Vector3(0,0,-1);
                     app.DoorClip(LTPlane,topTrim,posYClip,false)
                     app.DoorClip(RTPlane,topTrim,posYClip,false);
                 }
-
-                app.scene.add(topTrim);
                 trims.push(topTrim);
+                app.scene.add(topTrim);
 
                 if (!isDoors)
                 {
                     //Load bottom trim
-                    let bottomTrim = defaultTrim.clone();
+                    let bottomTrim = loadedMesh.clone();
                     bottomTrim.position.copy(currentPoints[1]);
 
                     if (IsX)
@@ -1685,8 +1670,6 @@ class App {
                             bottomTrim.rotateX(Math.PI);
                         }
                         bottomTrim.position.x += dimensions.x / 2;
-
-                        let XClip = new THREE.Vector3(-1,0,0);
                         app.DoorClip(LBPlane,bottomTrim,YClip,false);
                         app.DoorClip(RBPlane,bottomTrim,YClip,false);
                     }
@@ -1702,16 +1685,13 @@ class App {
                             bottomTrim.rotateY(-Math.PI/2);
                         }
                         bottomTrim.position.z += dimensions.x / 2;
-                        let ZClip = new THREE.Vector3(0,0,-1);
                         app.DoorClip(LBPlane,bottomTrim,YClip,false);
                         app.DoorClip(RBPlane,bottomTrim,YClip,false);
 
                     }
-
-                    app.scene.add(bottomTrim);
                     trims.push(bottomTrim);
+                    app.scene.add(bottomTrim);
                 }
-            })
         }
 
     }
@@ -1719,7 +1699,17 @@ class App {
     GenerateWallframeTrims(ID)
     {
         this.ResetDoorTrims();
-        this.GenerateSlicedTrims(ID,WallframePlanes,SpawnedDoorTrims,false);
+        window.gltfLoader.load(ID + ".gltf", function (gltf) {
+            let loadedScene = gltf.scene;
+            let defaultTrim;
+            loadedScene.traverse((child) => {
+                if (child.isMesh) {
+                    child.material.color.set(trimColor);
+                    defaultTrim = child.parent;
+                }
+            });
+            app.GenerateSlicedTrims(defaultTrim,WallframePlanes,SpawnedDoorTrims,false);
+        })
     }
 
     //Ensure to change Z to Y when testing vertical planes
@@ -2035,7 +2025,7 @@ class App {
                 let startPoint = new THREE.Vector3(0,0,0);
 
                 startPoint.copy(startPosition);
-                startPoint.y = this.reticle.position.y;
+                //startPoint.y = this.reticle.position.y;
 
                 app.GenerateTrims(trimToSpawn, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
             }
