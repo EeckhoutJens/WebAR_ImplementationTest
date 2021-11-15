@@ -429,6 +429,8 @@ class App {
          * XRFrame.getViewerPose can return null while the session attempts to establish tracking. */
         const pose = frame.getViewerPose(this.localReferenceSpace);
         if (pose) {
+            if (pose.emulatedPosition === true)
+                console.log('Lost tracking, using emulated position');
             /** In mobile AR, we only have one view. */
             const view = pose.views[0];
 
@@ -937,7 +939,7 @@ class App {
                         ConstrainedYPosWalls = WallPoints[1].position.y;
 
                         //DELETE - Just added it now for testing purposes
-                        //ConstrainedYPosWalls = 1;
+                        ConstrainedYPosWalls = 2;
 
                         WallHeight = ConstrainedYPosWalls - WallPoints[0].position.y;
                         this.ResetWallPoints();
@@ -981,7 +983,7 @@ class App {
                 if (WallframePoints.length === 2)
                 {
                     //Generate top left
-                    //WallframePoints[1].position.y = 0.5;
+                    WallframePoints[1].position.y = 0.5;
                     let topLeftPosition = WallframePoints[0].position.clone();
                     topLeftPosition.y = WallframePoints[1].position.y;
                     let topLeftSphere = this.CreateSphere(topLeftPosition);
