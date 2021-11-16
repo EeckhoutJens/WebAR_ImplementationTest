@@ -31,6 +31,8 @@ const WallPoints = [];
 const WallPlanePoints = [];
 const WallLines = [];
 const WallPlanes = [];
+const UsedClippingPlanesWallFrames = [];
+const PlaneHelpers = [];
 
 const WallframePoints = [];
 const WallframePlanes = [];
@@ -42,6 +44,8 @@ const SpawnedWallTrims = [];
 const ConnectedWallTrims = [];
 const ConnectedWallframes =[];
 let TrimsToMove = [];
+let FrameToMove;
+let FtMClippingPlanes;
 const SpawnedDoorTrims = [];
 
 const SetIDs = [];
@@ -98,6 +102,7 @@ let FinishedPlacingWalls = false;
 let ModelID;
 let isMovingTrim;
 let inEditMode = false;
+let selectedFrame = false;
 let SpawnedDecorations = [];
 let HitPlaneDirection;
 let IsDirectionX = false;
@@ -263,25 +268,6 @@ class App {
     //Separate clip function for doortrims and frames where it is important that trims get trimmed and connect to each other
     DoorClip(plane,object,clipNormal,createHelper)
     {
-        //Create 3D plane in order to make positioning easier
-        /**let testPlaneGeom = new THREE.PlaneGeometry(1,1);
-        const material = new THREE.MeshBasicMaterial( {color: 0xffff00, side: THREE.DoubleSide} );
-        const plane = new THREE.Mesh( testPlaneGeom, material );
-
-        plane.position.copy(object.position);
-
-        if (clipNormal.x !== 0)
-        {
-            plane.position.x = startPos + length;
-            plane.rotateZ(-Math.PI / 4);
-        }
-        else
-        {
-            plane.position.z = startPos + length;
-            plane.rotateX(-Math.PI / 4);
-        }*/
-
-
         //Now we transform our plane into a 2D plane so we can actually use it to clip
         var normal = new THREE.Vector3();
         var point = new THREE.Vector3();
@@ -299,6 +285,7 @@ class App {
         {
             let test = new THREE.PlaneHelper(clippingPlane[0],2,0x0000ff )
             this.scene.add(test);
+            PlaneHelpers.push(test);
         }
 
         object.traverse((child) => {
@@ -311,6 +298,15 @@ class App {
                     child.material.clippingPlanes.push(clippingPlane[0]);
             }
         })
+    }
+
+    ResetHelpers()
+    {
+        for(let i = 0; i < PlaneHelpers.length; ++i)
+        {
+            this.scene.remove(PlaneHelpers[i]);
+        }
+        PlaneHelpers.length = 0;
     }
 
     ClipToLength(startPos, object, length, clipNormal, createHelper)
@@ -331,6 +327,17 @@ class App {
 
                 else
                 child.material.clippingPlanes.push(clippingPlane[0]);
+            }
+        })
+    }
+
+    ResetClipPlanes(object)
+    {
+        object.traverse((child) => {
+            if (child.isMesh) {
+                //child.material = child.material.clone();
+                if (child.material.clippingPlanes !== null)
+                    child.material.clippingPlanes = null;
             }
         })
     }
@@ -1068,10 +1075,30 @@ class App {
 
     MoveWallTrims()
     {
-        for (let i = 0; i < TrimsToMove.length; ++i)
+        if (!selectedFrame)
         {
-            TrimsToMove[i].position.y = paramsWallTrimHeight.height;
+            for (let i = 0; i < TrimsToMove.length; ++i)
+            {
+                TrimsToMove[i].position.y = paramsWallTrimHeight.height;
+            }
         }
+
+        else
+        {
+            app.ResetHelpers();
+            let change = paramsWallTrimHeight.height - FrameToMove.position.y;
+            FrameToMove.position.y = paramsWallTrimHeight.height;
+            for (let i = 0; i < FrameToMove.children.length; ++i)
+            {
+                app.ResetClipPlanes(FrameToMove.children[i]);
+            }
+            for (let i = 0; i < FtMClippingPlanes.children.length; ++i)
+            {
+                FtMClippingPlanes.children[i].position.y += change;
+            }
+            app.ReclipFrame(FrameToMove,FtMClippingPlanes);
+        }
+
     }
 
     ResetDecorations()
@@ -1466,7 +1493,7 @@ class App {
                 }
     }
 
-    GenerateSlicedTrims(loadedMesh, planes, trims,isDoors)
+    GenerateSlicedTrims(loadedMesh, planes,isDoors)
     {
         //Need to load 3 trims - left,top,right
         //1 (left), 0 (top), 2 (right)
@@ -1475,6 +1502,8 @@ class App {
         for(let currentPlane = 0; currentPlane < planes.length; ++currentPlane)
         {
             let currentPoints = planes[currentPlane];
+            let usedClippingPlanes = new THREE.Group();
+            let trims = new THREE.Group();
 
             let rightDirection = this.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
             let absRightDirection = new THREE.Vector3(0,0,0);
@@ -1520,6 +1549,8 @@ class App {
                         LBPlane.rotateX(-Math.PI / 4);
 
                 }
+                usedClippingPlanes.add(LTPlane);
+                usedClippingPlanes.add(LBPlane);
 
 
                 let leftTrim = loadedMesh.clone();
@@ -1560,8 +1591,8 @@ class App {
                 if (!isDoors)
                     app.DoorClip(LBPlane,leftTrim,posYClip,false);
 
-                trims.push(leftTrim);
-                app.scene.add(leftTrim);
+                trims.add(leftTrim);
+                //app.scene.add(leftTrim);
 
             //Load right trim
 
@@ -1594,6 +1625,8 @@ class App {
                     RBPlane.rotateX(Math.PI / 4);
 
                 }
+                usedClippingPlanes.add(RTPlane);
+                usedClippingPlanes.add(RBPlane);
 
                 let rightTrim = loadedMesh.clone();
                 rightTrim.rotateZ(Math.PI / 2);
@@ -1618,8 +1651,8 @@ class App {
                 if (!isDoors)
                     app.DoorClip(RBPlane,rightTrim,posYClip,false);
 
-                trims.push(rightTrim);
-                app.scene.add(rightTrim);
+                trims.add(rightTrim);
+                //app.scene.add(rightTrim);
 
             //Load top trim
                 let topTrim = loadedMesh.clone();
@@ -1654,8 +1687,8 @@ class App {
                     app.DoorClip(LTPlane,topTrim,posYClip,false)
                     app.DoorClip(RTPlane,topTrim,posYClip,false);
                 }
-                trims.push(topTrim);
-                app.scene.add(topTrim);
+                trims.add(topTrim);
+                //app.scene.add(topTrim);
 
                 if (!isDoors)
                 {
@@ -1691,16 +1724,18 @@ class App {
                         app.DoorClip(RBPlane,bottomTrim,YClip,false);
 
                     }
-                    trims.push(bottomTrim);
-                    app.scene.add(bottomTrim);
+                    trims.add(bottomTrim);
+                    //app.scene.add(bottomTrim);
                 }
+                UsedClippingPlanesWallFrames.push(usedClippingPlanes);
+                app.scene.add(trims);
+                ConnectedWallframes.push(trims);
         }
 
     }
 
     GenerateWallframeTrims(ID)
     {
-        this.ResetDoorTrims();
         window.gltfLoader.load(ID + ".gltf", function (gltf) {
             let loadedScene = gltf.scene;
             let defaultTrim;
@@ -1710,8 +1745,31 @@ class App {
                     defaultTrim = child.parent;
                 }
             });
-            app.GenerateSlicedTrims(defaultTrim,WallframePlanes,SpawnedDoorTrims,false);
+            let testGroup = new THREE.Group;
+            app.GenerateSlicedTrims(defaultTrim,WallframePlanes,false);
         })
+    }
+
+    ReclipFrame(trims, clippingPlanes)
+    {
+        let NegYClip = new THREE.Vector3(0,-1,0);
+        let PosYClip = new THREE.Vector3(0,1,0);
+
+        //Reclip left trim
+        this.DoorClip(clippingPlanes.children[0],trims.children[0],NegYClip,false);
+        this.DoorClip(clippingPlanes.children[1],trims.children[0],PosYClip,false);
+
+        //Reclip right trim
+        this.DoorClip(clippingPlanes.children[2],trims.children[1],NegYClip,false);
+        this.DoorClip(clippingPlanes.children[3],trims.children[1],PosYClip,false);
+
+        //Reclip top trim
+        this.DoorClip(clippingPlanes.children[0],trims.children[2],PosYClip,false);
+        this.DoorClip(clippingPlanes.children[2],trims.children[2],PosYClip,false);
+
+        //Reclip bottom trim
+        this.DoorClip(clippingPlanes.children[1],trims.children[3],NegYClip,false);
+        this.DoorClip(clippingPlanes.children[3],trims.children[3],NegYClip,false);
     }
 
     //Ensure to change Z to Y when testing vertical planes
@@ -2234,6 +2292,7 @@ class App {
                 SelectButton.style.display = "block";
                 defaultGui.hide();
                 transformGui.show();
+                if (SpawnedWallTrims)
                 paramsWallTrimHeight.height = SpawnedWallTrims[0].position.y;
             }
             else
@@ -2299,21 +2358,57 @@ class App {
 
     SelectClicked()
     {
-        for (let i = 0; i < ConnectedWallTrims.length; ++i)
+        selectedFrame = false;
+        //Check walltrims
+        if (ConnectedWallTrims)
         {
-            let currentTrims = ConnectedWallTrims[i];
-            for (let j = 0; j < currentTrims.length; ++j)
+            this.UpdateTrimColor();
+            TrimsToMove = null;
+            for (let i = 0; i < ConnectedWallTrims.length; ++i)
             {
-                let distanceToMarker = currentTrims[j].position.distanceToSquared(this.reticle.position);
-                if (distanceToMarker < 0.3)
+                let currentTrims = ConnectedWallTrims[i];
+                for (let j = 0; j < currentTrims.length; ++j)
                 {
-                    this.UpdateTrimColor();
-                    TrimsToMove = currentTrims;
-                    paramsWallTrimHeight.height = currentTrims[j].position.y;
-                    this.RecolorSelectedTrims();
-                    return;
+                    let distanceToMarker = currentTrims[j].position.distanceToSquared(this.reticle.position);
+                    if (distanceToMarker < 1)
+                    {
+                        TrimsToMove = currentTrims;
+                        paramsWallTrimHeight.height = currentTrims[j].position.y;
+                        this.RecolorSelectedTrims();
+                        return;
+                    }
                 }
             }
+        }
+
+
+        //Check wallframes
+        if (ConnectedWallframes)
+        {
+            for (let i = 0; i < ConnectedWallframes.length; ++i)
+            {
+                let currentFrame = ConnectedWallframes[i]
+                for (let j = 0; j < currentFrame.children.length; ++j)
+                {
+                    let distanceToMarker = currentFrame.children[j].position.distanceToSquared(this.reticle.position);
+                    if (distanceToMarker < 1)
+                    {
+                        FrameToMove = currentFrame;
+                        FtMClippingPlanes = UsedClippingPlanesWallFrames[i];
+                        this.RecolorSelectedFrame();
+                        selectedFrame = true;
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    RecolorSelectedFrame()
+    {
+        for (let i = 0; i < FrameToMove.children.length; ++i)
+        {
+            FrameToMove.children[i].children[0].material.color.setHex(0x00FF00);
         }
     }
 
