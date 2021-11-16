@@ -770,7 +770,7 @@ class App {
         {
                 if (WallPoints.length !== 0)
                 {
-                    let distanceToMarker = WallPoints[WallPoints.length - 2].position.distanceToSquared(this.reticle.position);
+                    let distanceToMarker = WallPoints[WallPoints.length - 1].position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         FinishedPlacingWalls = true;
@@ -783,7 +783,7 @@ class App {
                         document.getElementById("WallsIcon").style.display = "none";
                     }
 
-                    distanceToMarker = WallPoints[0].position.distanceToSquared(this.reticle.position);
+                    distanceToMarker = WallPoints[1].position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         let Point1;
@@ -882,7 +882,7 @@ class App {
                         ConstrainedYPosWalls = WallPoints[1].position.y;
 
                         //DELETE - Just added it now for testing purposes
-                        //ConstrainedYPosWalls = 1.5;
+                        ConstrainedYPosWalls = 1.5;
 
                         WallHeight = ConstrainedYPosWalls - WallPoints[0].position.y;
                         this.ResetWallPoints();
@@ -1998,7 +1998,7 @@ class App {
                 let startPoint = new THREE.Vector3(0,0,0);
 
                 startPoint.copy(startPosition);
-                startPoint.y = this.reticle.position.y;
+                //startPoint.y = this.reticle.position.y;
 
                 app.GenerateTrims(trimToSpawn, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
             }
