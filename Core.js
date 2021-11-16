@@ -108,7 +108,6 @@ let HitPlaneDirection;
 let IsDirectionX = false;
 let CurrentFrame;
 let pmremGenerator;
-let all_previous_anchors = new Set();
 
 //GUI
 let defaultGui;
@@ -350,7 +349,7 @@ class App {
         try {
             /** initialize a WebXR session using extra required features. */
             this.xrSession = await navigator.xr.requestSession("immersive-ar", {
-                requiredFeatures: ['hit-test', 'dom-overlay', 'anchors', 'light-estimation'],
+                requiredFeatures: ['local','hit-test', 'dom-overlay', 'anchors', 'light-estimation'],
                 domOverlay: { root: document.body }
             });
 
@@ -522,31 +521,8 @@ class App {
             // only update the object's position if it's still in the list
             // of frame.trackedAnchors
             // Update the position of all the anchored objects based on the currently reported positions of their anchors
-            const tracked_anchors = frame.trackedAnchors;
-            if(tracked_anchors){
-                all_previous_anchors.forEach(anchor => {
-                    if(!tracked_anchors.has(anchor)){
-                        this.scene.remove(anchor.sceneObject);
-                    }
-                });
 
-                tracked_anchors.forEach(anchor => {
-                    const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
-                    if (anchorPose) {
-                        anchor.context.sceneObject.matrix.set(anchorPose.transform.matrix);
-                    } else {
-                        anchor.context.sceneObject.visible = false;
-                    }
-                });
 
-                all_previous_anchors = tracked_anchors;
-            } else {
-                all_previous_anchors.forEach(anchor => {
-                    this.scene.remove(anchor.sceneObject);
-                });
-
-                all_previous_anchors = new Set();
-            }
 
 
             /** Render the scene with THREE.WebGLRenderer. */
@@ -794,7 +770,7 @@ class App {
         {
                 if (WallPoints.length !== 0)
                 {
-                    let distanceToMarker = WallPoints[WallPoints.length - 2].position.distanceToSquared(this.reticle.position);
+                    let distanceToMarker = WallPoints[WallPoints.length - 1].position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         FinishedPlacingWalls = true;
@@ -807,7 +783,7 @@ class App {
                         document.getElementById("WallsIcon").style.display = "none";
                     }
 
-                    distanceToMarker = WallPoints[0].position.distanceToSquared(this.reticle.position);
+                    distanceToMarker = WallPoints[1].position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         let Point1;
@@ -820,32 +796,8 @@ class App {
                         SecondLocation.y = ConstrainedYPosWalls - WallHeight;
                         let Point2 = this.CreateSphere(SecondLocation);
 
-                        //Code copied from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
-                        let frame = event.frame;
-                        let anchorPose = new XRRigidTransform();
-                        let inputSource = event.inputSource;
-
-                        // If the user is on a screen based device, place the anchor 1 meter in front of them.
-                        // Otherwise place the anchor at the location of the input device
-                        if (inputSource.targetRayMode === 'screen') {
-                            anchorPose = new XRRigidTransform(
-                                {x: 0, y: 0, z: -1},
-                                {x: 0, y: 0, z: 0, w: 1});
-                        }
-
-                        // Create a free-floating anchor.
-                        frame.createAnchor(anchorPose, this.localReferenceSpace).then((anchor) => {
-                            anchor.context = {};
-                            anchor.context.sceneObject = Point1;
-                            Point1.anchor = anchor;
-                            WallPoints.push(Point1);
-                        })
-
-                        frame.createAnchor(anchorPose, this.localReferenceSpace).then((anchor) => {
-                            anchor.context = {};
-                            anchor.context.sceneObject = Point2;
-                            Point2.anchor = anchor;
-                            WallPoints.push(Point2);
+                        WallPoints.push(Point1);
+                        WallPoints.push(Point2);
 
                             if (WallPoints.length >= 4)
                             {
@@ -855,7 +807,7 @@ class App {
                             this.CreateDoneButton();
                             this.CreateSelectWallframesButton();
                             document.getElementById("WallsIcon").style.display = "none";
-                        })
+
                         FinishedPlacingWalls = true;
                         PlacingPointsWalls = false;
                         let test = previewLine.clone();
@@ -886,25 +838,8 @@ class App {
                     Point1 = this.CreateSphere(FirstLocation);
 
                 //Code copied from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
-                let frame = event.frame;
-                let anchorPose = new XRRigidTransform();
-                let inputSource = event.inputSource;
 
-                // If the user is on a screen based device, place the anchor 1 meter in front of them.
-                // Otherwise place the anchor at the location of the input device
-                if (inputSource.targetRayMode === 'screen') {
-                    anchorPose = new XRRigidTransform(
-                        {x: 0, y: 0, z: -1},
-                        {x: 0, y: 0, z: 0, w: 1});
-                }
-
-                // Create a free-floating anchor.
-                frame.createAnchor(anchorPose, this.localReferenceSpace).then((anchor) => {
-                    anchor.context = {};
-                    anchor.context.sceneObject = Point1;
-                    Point1.anchor = anchor;
                     WallPoints.push(Point1);
-                })
 
 
                 let SecondLocation = new THREE.Vector3(0,0,0);
@@ -916,18 +851,13 @@ class App {
                 else
                     Point2 = this.CreateSphere(SecondLocation);
 
-                // Create a free-floating anchor.
-                frame.createAnchor(anchorPose, this.localReferenceSpace).then((anchor) => {
-                    anchor.context = {};
-                    anchor.context.sceneObject = Point2;
-                    Point2.anchor = anchor;
+
                     WallPoints.push(Point2);
 
                     if (WallPoints.length >= 4)
                     {
                         ++NrOfWalls;
                     }
-                })
 
 
 
@@ -945,12 +875,7 @@ class App {
         {
             let createdSphere = this.CreateSphere(this.reticle.position);
 
-                // Create a free-floating anchor.
-                reticleHitTestResult.createAnchor().then((anchor) =>
-                {
-                    anchor.context = {};
-                    anchor.context.sceneObject = createdSphere;
-                    createdSphere.anchor = anchor;
+
 
                     WallPoints.push(createdSphere);
 
@@ -959,7 +884,7 @@ class App {
                         ConstrainedYPosWalls = WallPoints[1].position.y;
 
                         //DELETE - Just added it now for testing purposes
-                        //ConstrainedYPosWalls = 2;
+                        ConstrainedYPosWalls = 2;
 
                         WallHeight = ConstrainedYPosWalls - WallPoints[0].position.y;
                         this.ResetWallPoints();
@@ -968,10 +893,6 @@ class App {
                         document.getElementById("HeightIcon").style.display = "none";
                         document.getElementById("WallsIcon").style.display = "block";
                     }
-
-                }, (error) => {
-                    console.error("Could not create anchor: " + error);
-                });
         }
     }
 
@@ -980,30 +901,13 @@ class App {
             //Select bottom left - top right
             let createdSphere = this.CreateSphere(this.reticle.position);
 
-            //Code copied from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
-            let frame = event.frame;
-            let anchorPose = new XRRigidTransform();
-            let inputSource = event.inputSource;
 
-            // If the user is on a screen based device, place the anchor 1 meter in front of them.
-            // Otherwise place the anchor at the location of the input device
-            if (inputSource.targetRayMode === 'screen') {
-                anchorPose = new XRRigidTransform(
-                    {x: 0, y: 0, z: -1},
-                    {x: 0, y: 0, z: 0, w: 1});
-            }
-
-            // Create a free-floating anchor.
-            frame.createAnchor(anchorPose, this.localReferenceSpace).then((anchor) => {
-                anchor.context = {};
-                anchor.context.sceneObject = createdSphere;
-                createdSphere.anchor = anchor;
                 WallframePoints.push(createdSphere);
 
                 if (WallframePoints.length === 2)
                 {
                     //Generate top left
-                    //WallframePoints[1].position.y = 0.5;
+                    WallframePoints[1].position.y = 0.5;
                     let topLeftPosition = WallframePoints[0].position.clone();
                     topLeftPosition.y = WallframePoints[1].position.y;
                     let topLeftSphere = this.CreateSphere(topLeftPosition);
@@ -1017,7 +921,6 @@ class App {
 
                     this.DrawDoor();
                 }
-            })
     }
 
     HandleWindowSelection()
@@ -1030,7 +933,6 @@ class App {
         for(let i= 0; i < WallPoints.length; ++i)
         {
             this.scene.remove(WallPoints[i]);
-            WallPoints[i].anchor.delete();
         }
         WallPoints.length = 0;
     }
@@ -1040,8 +942,6 @@ class App {
         for(let i= 0; i < WallframePoints.length; ++i)
         {
             this.scene.remove(WallframePoints[i]);
-            if (WallframePoints[i].anchor)
-                WallframePoints[i].anchor.delete();
         }
         WallframePoints.length = 0;
     }
@@ -2101,7 +2001,7 @@ class App {
                 let startPoint = new THREE.Vector3(0,0,0);
 
                 startPoint.copy(startPosition);
-                startPoint.y = this.reticle.position.y;
+                //startPoint.y = this.reticle.position.y;
 
                 app.GenerateTrims(trimToSpawn, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
             }
