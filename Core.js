@@ -682,6 +682,19 @@ class App {
 
         }
 
+        for (let currWallFrame = 0; currWallFrame < ConnectedWallframes.length; ++currWallFrame)
+        {
+            let frame = ConnectedWallframes[currWallFrame];
+            for (let currTrim = 0; currTrim < frame.children.length; ++currTrim)
+            {
+                frame.children[currTrim].traverse((child) => {
+                    if (child.isMesh) {
+                        child.material.color.set(trimColor);
+                    }
+                })
+            }
+        }
+
         for (let currTrim = 0; currTrim < SpawnedDoorTrims.length; ++currTrim)
         {
             SpawnedDoorTrims[currTrim].traverse((child) => {
@@ -1073,6 +1086,16 @@ class App {
         ConnectedWallTrims.length = 0;
     }
 
+    ResetWallFrames()
+    {
+        for(let i = 0; i < ConnectedWallframes.length; ++i)
+        {
+            this.scene.remove(ConnectedWallframes[i]);
+        }
+        ConnectedWallframes.length = 0;
+        UsedClippingPlanesWallFrames.length = 0;
+    }
+
     MoveWallTrims()
     {
         if (!selectedFrame)
@@ -1259,14 +1282,7 @@ class App {
                                     decoration.rotateY(-Math.PI / 2);
 
                             }
-                            let XRTransform = new XRRigidTransform(decoration.position, decoration.orientation);
-                            reticleHitTestResult.createAnchor(XRTransform, app.localReferenceSpace).then((anchor) =>
-                            {
-                                SpawnedDecorations.push({
-                                    anchoredObject: decoration,
-                                    anchor: anchor
-                                });
-                            });
+                            SpawnedDecorations.push(decoration);
                             scene.add(decoration);
                         });
                         break;
@@ -2286,14 +2302,20 @@ class App {
             inEditMode = !inEditMode;
             if (inEditMode)
             {
+                ModelID = null;
                 PlaceButton.style.display = "none";
                 ResetButton.style.display = "none";
                 document.getElementById("OpenButton").style.display = "none";
                 SelectButton.style.display = "block";
                 defaultGui.hide();
                 transformGui.show();
-                if (SpawnedWallTrims)
-                paramsWallTrimHeight.height = SpawnedWallTrims[0].position.y;
+                if (SpawnedWallTrims.length > 0)
+                {
+                    paramsWallTrimHeight.height = SpawnedWallTrims[0].position.y;
+                }
+                app.scene.remove(app.reticle);
+                app.reticle = new Reticle();
+                app.scene.add(app.reticle);
             }
             else
             {
@@ -2359,10 +2381,10 @@ class App {
     SelectClicked()
     {
         selectedFrame = false;
+        this.UpdateTrimColor();
         //Check walltrims
         if (ConnectedWallTrims)
         {
-            this.UpdateTrimColor();
             TrimsToMove = null;
             for (let i = 0; i < ConnectedWallTrims.length; ++i)
             {
@@ -2380,7 +2402,6 @@ class App {
                 }
             }
         }
-
 
         //Check wallframes
         if (ConnectedWallframes)
@@ -2433,6 +2454,7 @@ class App {
     {
         this.ResetDecorations();
         this.ResetWallTrims();
+        this.ResetWallFrames();
         this.ResetCeilingTrims();
         this.ResetFloorTrims();
         this.ResetDoorTrims();
