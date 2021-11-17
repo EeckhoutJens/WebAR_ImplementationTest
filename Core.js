@@ -110,6 +110,7 @@ let HitPlaneDirection;
 let IsDirectionX = false;
 let CurrentFrame;
 let pmremGenerator;
+let all_previous_anchors = new Set();
 
 //GUI
 let defaultGui;
@@ -536,6 +537,49 @@ class App {
             // only update the object's position if it's still in the list
             // of frame.trackedAnchors
             // Update the position of all the anchored objects based on the currently reported positions of their anchors
+            const tracked_anchors = frame.trackedAnchors;
+            if(tracked_anchors){
+                all_previous_anchors.forEach(anchor => {
+                    if(!tracked_anchors.has(anchor))
+                    {
+                        for (let currObject = 0; currObject < anchor.context.sceneObject.length;++currObject)
+                        {
+                            this.scene.remove(anchor.context.sceneObject[currObject]);
+                        }
+                    }
+                });
+
+                tracked_anchors.forEach(anchor => {
+                    const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
+                    if (anchorPose)
+                    {
+                        for (let currObject = 0; currObject < anchor.context.sceneObject.length;++currObject)
+                        {
+                            anchor.context.sceneObject[currObject].matrix.set(anchorPose.transform.matrix);
+                        }
+                    }
+                    else
+                    {
+                        for (let currObject = 0; currObject < anchor.context.sceneObject.length;++currObject)
+                        {
+                            anchor.context.sceneObject[currObject].visible = false;
+                        }
+                    }
+                });
+
+                all_previous_anchors = tracked_anchors;
+            } else {
+                all_previous_anchors.forEach(anchor =>
+                {
+                    for (let currObject = 0; currObject < anchor.context.sceneObject.length;++currObject)
+                    {
+                        this.scene.remove(anchor.context.sceneObject[currObject]);
+                    }
+
+                });
+
+                all_previous_anchors = new Set();
+            }
 
 
 
@@ -748,7 +792,6 @@ class App {
         //Ensure to change Z to Y when testing vertical planes
     onSelect = (event) =>
     {
-        console.log("Select triggered")
         if (!FinishedPlacingWalls)
             this.HandleWallSelection(event);
 
@@ -758,7 +801,6 @@ class App {
 
     onSelectStart = (event) =>
     {
-        console.log("Select start triggered")
 
         if (inEditMode)
         {
@@ -775,7 +817,6 @@ class App {
 
     onSelectEnd = (event) =>
     {
-        console.log("Select end triggered")
         isMovingTrim = false;
     }
 
@@ -852,10 +893,6 @@ class App {
                 else
                     Point1 = this.CreateSphere(FirstLocation);
 
-                //Code copied from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
-
-                    WallPoints.push(Point1);
-
 
                 let SecondLocation = new THREE.Vector3(0,0,0);
                 SecondLocation.copy(FirstLocation);
@@ -867,14 +904,23 @@ class App {
                     Point2 = this.CreateSphere(SecondLocation);
 
 
-                    WallPoints.push(Point2);
+            //Code copied from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
+            reticleHitTestResult.createAnchor().then((anchor) =>
+            {
+                anchor.context = {};
+                anchor.context.sceneObject = [];
+                Point1.anchor = anchor;
+                Point2.anchor = anchor;
+                anchor.context.sceneObject.push(Point1);
+                anchor.context.sceneObject.push(Point2);
+                WallPoints.push(Point1);
+                WallPoints.push(Point2);
 
-                    if (WallPoints.length >= 4)
-                    {
-                        ++NrOfWalls;
-                    }
-
-
+                if (WallPoints.length >= 4)
+                {
+                    ++NrOfWalls;
+                }
+            })
 
                 if (WallPoints.length > 0)
                 {
