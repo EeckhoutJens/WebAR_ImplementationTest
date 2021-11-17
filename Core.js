@@ -45,6 +45,8 @@ const ConnectedWallTrims = [];
 const ConnectedWallframes =[];
 let TrimsToMove = [];
 let FrameToMove;
+let DecoToMove;
+let IsMovingDeco;
 let FtMClippingPlanes;
 const SpawnedDoorTrims = [];
 
@@ -466,6 +468,15 @@ class App {
                 this.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
                 this.reticle.setRotationFromQuaternion(hitPose.transform.orientation);
                 this.reticle.updateMatrixWorld(true);
+
+                if (IsMovingDeco)
+                {
+                    if (DecoToMove)
+                    {
+                        DecoToMove.position.set(this.reticle.position.x,this.reticle.position.y,this.reticle.position.z);
+                        DecoToMove.setRotationFromQuaternion(hitPose.transform.orientation);
+                    }
+                }
             }
 
             //Draw preview lines while placing points to define walls
@@ -2087,8 +2098,8 @@ class App {
             //Check if given position is within boundary
             if (IsDirectionX)
             {
-                if (position.x <= highest.x && position.x >= lowest.x
-                    &&position.y <= highest.y && position.y >= lowest.y)
+                if (position.x <= highest.x + 0.25 && position.x >= lowest.x - 0.25
+                    &&position.y <= highest.y + 0.25 && position.y >= lowest.y - 0.25)
                 {
                     let distanceToMarker = Math.abs(currentPoints[0].z - position.z);
                     if (distanceToMarker < 0.5)
@@ -2100,8 +2111,8 @@ class App {
             }
             else
             {
-                if (position.z <= highest.z && position.z >= lowest.z
-                    && position.y <= highest.y && position.y >= lowest.y)
+                if (position.z <= highest.z + 0.25 && position.z >= lowest.z - 0.25
+                    && position.y <= highest.y + 0.25 && position.y >= lowest.y - 0.25)
                 {
                     let distanceToMarker = Math.abs(currentPoints[0].x - position.x);
                     if (distanceToMarker < 0.5)
@@ -2251,6 +2262,16 @@ class App {
                 SelectButton.style.display = "none";
                 defaultGui.show();
                 transformGui.hide();
+                if (WidthController)
+                {
+                    transformGui.remove(WidthController);
+                    WidthController = null;
+                }
+                if (DecoToMove)
+                {
+                    DecoToMove = null;
+                    IsMovingDeco = false;
+                }
                 app.UpdateTrimColor();
             }
 
@@ -2311,6 +2332,12 @@ class App {
             transformGui.remove(WidthController);
             WidthController = null;
         }
+        if (DecoToMove)
+        {
+            DecoToMove = null;
+            IsMovingDeco = false;
+            return;
+        }
         selectedFrame = false;
         this.UpdateTrimColor();
 
@@ -2324,7 +2351,7 @@ class App {
                 for (let j = 0; j < currentTrims.length; ++j)
                 {
                     let distanceToMarker = currentTrims[j].position.distanceToSquared(this.reticle.position);
-                    if (distanceToMarker < 1)
+                    if (distanceToMarker < 0.25)
                     {
                         TrimsToMove = currentTrims;
                         paramsWallTrimHeight.height = currentTrims[j].position.y;
@@ -2344,7 +2371,7 @@ class App {
                 for (let j = 0; j < currentFrame.children.length; ++j)
                 {
                     let distanceToMarker = currentFrame.children[j].position.distanceToSquared(this.reticle.position);
-                    if (distanceToMarker < 1)
+                    if (distanceToMarker < 0.25)
                     {
                         FrameToMove = currentFrame;
                         FtMClippingPlanes = UsedClippingPlanesWallFrames[i];
@@ -2363,6 +2390,23 @@ class App {
                             }
 
                         }
+                        return;
+                    }
+                }
+            }
+        }
+
+        //Check decorations
+        {
+            if (SpawnedDecorations)
+            {
+                for (let currDeco = 0; currDeco < SpawnedDecorations.length; ++currDeco)
+                {
+                    let distanceToMarker = SpawnedDecorations[currDeco].position.distanceToSquared(this.reticle.position);
+                    if (distanceToMarker < 0.25)
+                    {
+                        DecoToMove = SpawnedDecorations[currDeco];
+                        IsMovingDeco = true;
                         return;
                     }
                 }
