@@ -581,9 +581,6 @@ class App {
                 all_previous_anchors = new Set();
             }
 
-
-
-
             /** Render the scene with THREE.WebGLRenderer. */
             this.renderer.render(this.scene, this.camera)
         }
@@ -911,6 +908,9 @@ class App {
                 anchor.context.sceneObject = [];
                 Point1.anchor = anchor;
                 Point2.anchor = anchor;
+                Point1.updateMatrixWorld(true);
+                Point2.updateMatrixWorld(true);
+
                 anchor.context.sceneObject.push(Point1);
                 anchor.context.sceneObject.push(Point2);
                 WallPoints.push(Point1);
@@ -2400,7 +2400,7 @@ class App {
                 for (let j = 0; j < currentTrims.length; ++j)
                 {
                     let distanceToMarker = currentTrims[j].position.distanceToSquared(this.reticle.position);
-                    if (distanceToMarker < 0.25)
+                    if (distanceToMarker < 0.5)
                     {
                         TrimsToMove = currentTrims;
                         paramsWallTrimHeight.height = currentTrims[j].position.y;
@@ -2420,7 +2420,7 @@ class App {
                 for (let j = 0; j < currentFrame.children.length; ++j)
                 {
                     let distanceToMarker = currentFrame.children[j].position.distanceToSquared(this.reticle.position);
-                    if (distanceToMarker < 0.25)
+                    if (distanceToMarker < 0.5)
                     {
                         FrameToMove = currentFrame;
                         FtMClippingPlanes = UsedClippingPlanesWallFrames[i];
@@ -2431,6 +2431,8 @@ class App {
                             let currentPlanePoints = WallPlanePoints[currPlane];
                             if (this.IsInSpecificPlane(FrameToMove.children[0].position,currentPlanePoints))
                             {
+                                //Force recalculation of IsDirection to prevent bugs
+                                this.CalculatePlaneDirection(FrameToMove.children[0].position,FrameToMove.children[3].position)
                                 if (IsDirectionX)
                                     WidthController = transformGui.add(paramsWallFrameWidth,'width',currentPlanePoints[0].x, currentPlanePoints[3].x).onChange(this.MoveWallFrameWidth);
                                 else
@@ -2452,7 +2454,7 @@ class App {
                 for (let currDeco = 0; currDeco < SpawnedDecorations.length; ++currDeco)
                 {
                     let distanceToMarker = SpawnedDecorations[currDeco].position.distanceToSquared(this.reticle.position);
-                    if (distanceToMarker < 0.25)
+                    if (distanceToMarker < 0.5)
                     {
                         DecoToMove = SpawnedDecorations[currDeco];
                         IsMovingDeco = true;
