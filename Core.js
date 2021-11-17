@@ -124,6 +124,8 @@ let decorationColor;
 
 //Transform GUI parameters
 let paramsWallTrimHeight = {height: 0.5};
+let paramsWallFrameWidth = {width: 0.5};
+let WidthController;
 
 let defaultEnv;
 let stats = new Stats();
@@ -435,8 +437,6 @@ class App {
          * XRFrame.getViewerPose can return null while the session attempts to establish tracking. */
         const pose = frame.getViewerPose(this.localReferenceSpace);
         if (pose) {
-            if (pose.emulatedPosition === true)
-                console.log('Lost tracking, using emulated position');
             /** In mobile AR, we only have one view. */
             const view = pose.views[0];
 
@@ -460,10 +460,11 @@ class App {
             if (hitTestResults.length > 0) {
                 let hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
 
-                /** Update the reticle position. */
+                /** Update the reticle transform. */
                 reticleHitTestResult = hitTestResults[0];
                 this.reticle.visible = true;
                 this.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
+                this.reticle.setRotationFromQuaternion(hitPose.transform.orientation);
                 this.reticle.updateMatrixWorld(true);
             }
 
@@ -905,7 +906,7 @@ class App {
                 if (WallframePoints.length === 2)
                 {
                     //Generate top left
-                    //WallframePoints[1].position.y = 0.5;
+                    WallframePoints[1].position.y = 0.5;
                     let topLeftPosition = WallframePoints[0].position.clone();
                     topLeftPosition.y = WallframePoints[1].position.y;
                     let topLeftSphere = this.CreateSphere(topLeftPosition);
@@ -994,7 +995,7 @@ class App {
         UsedClippingPlanesWallFrames.length = 0;
     }
 
-    MoveWallTrims()
+    MoveWallTrimsHeight()
     {
         if (!selectedFrame)
         {
@@ -1020,6 +1021,34 @@ class App {
             app.ReclipFrame(FrameToMove,FtMClippingPlanes);
         }
 
+    }
+
+    MoveWallFrameWidth()
+    {
+        app.ResetHelpers();
+        if (IsDirectionX)
+        {
+            let change = paramsWallFrameWidth.width - FrameToMove.position.x;
+            FrameToMove.position.x = paramsWallFrameWidth.width;
+            for (let i = 0; i < FtMClippingPlanes.children.length; ++i)
+            {
+                FtMClippingPlanes.children[i].position.x += change;
+            }
+        }
+        else
+        {
+            let change = paramsWallFrameWidth.width - FrameToMove.position.z;
+            FrameToMove.position.z = paramsWallFrameWidth.width;
+            for (let i = 0; i < FtMClippingPlanes.children.length; ++i)
+            {
+                FtMClippingPlanes.children[i].position.z += change;
+            }
+        }
+        for (let i = 0; i < FrameToMove.children.length; ++i)
+        {
+            app.ResetClipPlanes(FrameToMove.children[i]);
+        }
+        app.ReclipFrame(FrameToMove,FtMClippingPlanes);
     }
 
     ResetDecorations()
@@ -2061,8 +2090,8 @@ class App {
                 if (position.x <= highest.x && position.x >= lowest.x
                     &&position.y <= highest.y && position.y >= lowest.y)
                 {
-                    let distanceToMarker = Math.abs(currentPoints[0].z - this.reticle.position.z);
-                    if (distanceToMarker < 0.1)
+                    let distanceToMarker = Math.abs(currentPoints[0].z - position.z);
+                    if (distanceToMarker < 0.5)
                     {
                         inside = true;
                         HitPlaneDirection = direction;
@@ -2074,8 +2103,8 @@ class App {
                 if (position.z <= highest.z && position.z >= lowest.z
                     && position.y <= highest.y && position.y >= lowest.y)
                 {
-                    let distanceToMarker = Math.abs(currentPoints[0].x - this.reticle.position.x);
-                    if (distanceToMarker < 0.1)
+                    let distanceToMarker = Math.abs(currentPoints[0].x - position.x);
+                    if (distanceToMarker < 0.5)
                     {
                         inside = true;
                         HitPlaneDirection = direction;
@@ -2277,8 +2306,14 @@ class App {
 
     SelectClicked()
     {
+        if (WidthController)
+        {
+            transformGui.remove(WidthController);
+            WidthController = null;
+        }
         selectedFrame = false;
         this.UpdateTrimColor();
+
         //Check walltrims
         if (ConnectedWallTrims)
         {
@@ -2315,6 +2350,19 @@ class App {
                         FtMClippingPlanes = UsedClippingPlanesWallFrames[i];
                         this.RecolorSelectedFrame();
                         selectedFrame = true;
+                        for (let currPlane = 0; currPlane < WallPlanePoints.length; ++currPlane)
+                        {
+                            let currentPlanePoints = WallPlanePoints[currPlane];
+                            if (this.IsInSpecificPlane(FrameToMove.children[0].position,currentPlanePoints))
+                            {
+                                if (IsDirectionX)
+                                    WidthController = transformGui.add(paramsWallFrameWidth,'width',currentPlanePoints[0].x, currentPlanePoints[3].x).onChange(this.MoveWallFrameWidth);
+                                else
+                                    WidthController = transformGui.add(paramsWallFrameWidth,'width',currentPlanePoints[0].z, -currentPlanePoints[3].z).onChange(this.MoveWallFrameWidth);
+                                return;
+                            }
+
+                        }
                         return;
                     }
                 }
@@ -2388,7 +2436,7 @@ class App {
         defaultGui.add(paramsFillPlanes,'fillPlanes').onChange(this.UpdatePlaneFill);
         defaultGui.add(paramsVisibility, 'showGuides').onChange(this.UpdateGuideVisibility);
 
-        transformGui.add(paramsWallTrimHeight,'height',ConstrainedYPosWalls - WallHeight,ConstrainedYPosWalls).onChange(this.MoveWallTrims);
+        transformGui.add(paramsWallTrimHeight,'height',ConstrainedYPosWalls - WallHeight,ConstrainedYPosWalls).onChange(this.MoveWallTrimsHeight);
     }
 
     SelectWallframesClicked()
