@@ -411,6 +411,8 @@ class App {
 
         this.xrSession.requestAnimationFrame(this.onXRFrame);
 
+        document.getElementById("StabilizationGif").style.display = "block";
+
         this.xrSession.addEventListener("select", this.onSelect);
         this.xrSession.addEventListener("selectstart", this.onSelectStart);
         this.xrSession.addEventListener("selectend", this.onSelectEnd);
@@ -457,6 +459,7 @@ class App {
             //   /** If we have results, consider the environment stabilized. */
             if (!this.stabilized && hitTestResults.length > 0) {
                 this.stabilized = true;
+                document.getElementById("StabilizationGif").style.display = "none";
                 document.getElementById("HeightIcon").style.display = "block";
             }
             if (hitTestResults.length > 0) {

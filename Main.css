@@ -88,6 +88,21 @@ body {
     display: none;
 }
 
+.Stabilization
+{
+    background-image: url(Icons/stabilization.gif);
+    background-size: contain;
+    background-repeat: no-repeat;
+    width: 400px;
+    height: 400px;
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translate(-50%, 0);
+    z-index: 10;
+    display: none;
+}
+
 .DetermineWalls-Icon
 {
     background-image: url(Icons/DetermineWalls.png);
