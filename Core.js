@@ -139,8 +139,9 @@ let DoneButton;
 let WallframesButton;
 let WindowsButton;
 let PlaceButton;
-let ResetButton;
-let MoveButton;
+let RemoveButton;
+let RestartButton;
+let EditButton;
 let SelectButton;
 
 //Container class to handle WebXR logic
@@ -249,15 +250,16 @@ class App {
         document.getElementById("mySidenav").style.width = "250px";
         defaultGui.hide();
         PlaceButton.style.display = "none";
-        ResetButton.style.display = "none";
+        RestartButton.style.display = "none";
+        EditButton.style.display = "none";
     }
 
     closeNav() {
         document.getElementById("mySidenav").style.width = "0";
         defaultGui.show();
         PlaceButton.style.display = "block";
-        ResetButton.style.display = "block";
-
+        RestartButton.style.display = "block";
+        EditButton.style.display = "block";
     }
 
     openSub(id)
@@ -901,7 +903,7 @@ class App {
                     Point2 = this.CreateSphere(SecondLocation);
 
 
-            //Code copied from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
+            //Code adapted from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
             reticleHitTestResult.createAnchor().then((anchor) =>
             {
                 anchor.context = {};
@@ -2281,18 +2283,19 @@ class App {
     {
         let left = 'calc(20% - 50px)';
         let text = 'Edit';
-        MoveButton = this.CreateButton(text,left);
+        EditButton = this.CreateButton(text,left);
 
-        MoveButton.onclick = function ()
+        EditButton.onclick = function ()
         {
             inEditMode = !inEditMode;
             if (inEditMode)
             {
                 ModelID = null;
                 PlaceButton.style.display = "none";
-                ResetButton.style.display = "none";
+                RestartButton.style.display = "none";
                 document.getElementById("OpenButton").style.display = "none";
                 SelectButton.style.display = "block";
+                RemoveButton.style.display = "block";
                 defaultGui.hide();
                 transformGui.show();
                 if (SpawnedWallTrims.length > 0)
@@ -2306,9 +2309,10 @@ class App {
             else
             {
                 PlaceButton.style.display = "block";
-                ResetButton.style.display = "block";
+                RestartButton.style.display = "block";
                 document.getElementById("OpenButton").style.display = "block";
                 SelectButton.style.display = "none";
+                RemoveButton.style.display = "none";
                 defaultGui.show();
                 transformGui.hide();
                 if (WidthController)
@@ -2326,7 +2330,7 @@ class App {
 
         }
 
-        document.body.appendChild(MoveButton);
+        document.body.appendChild(EditButton);
     }
 
     CreateSelectButton()
@@ -2343,18 +2347,34 @@ class App {
         document.body.appendChild(SelectButton);
     }
 
-    CreateResetButton()
+    CreateRemoveButton()
     {
         let left = 'calc(85% - 50px)';
-        let text = 'Reset';
-        ResetButton = this.CreateButton(text,left)
+        let text = 'Remove';
+        RemoveButton = this.CreateButton(text,left)
 
-        ResetButton.onclick = function ()
+        RemoveButton.onclick = function ()
         {
-            app.ResetClicked();
+            app.RemoveClicked();
         }
 
-        document.body.appendChild(ResetButton);
+        document.body.appendChild(RemoveButton);
+    }
+
+    CreateRestartButton()
+    {
+        let left = 'calc(85% - 50px)';
+        let text = 'Restart';
+        RestartButton = this.CreateButton(text,left)
+
+        RestartButton.onclick = function ()
+        {
+            window.location.reload();
+            return false;
+        }
+
+        document.body.appendChild(RestartButton);
+
     }
 
     stylizeElement( element )
@@ -2490,7 +2510,7 @@ class App {
         }
     }
 
-    ResetClicked()
+    RemoveClicked()
     {
         this.ResetDecorations();
         this.ResetWallTrims();
@@ -2504,15 +2524,16 @@ class App {
     {
         document.getElementById("OpenButton").style.display = "block";
         this.CreatePlaceButton();
-        this.CreateResetButton();
+        this.CreateRestartButton();
+        this.CreateRemoveButton();
         this.CreateEditButton();
         this.CreateSelectButton();
         DoneButton.style.display = "none"
         WallframesButton.style.display = 'none';
         SelectButton.style.display = "none";
+        RemoveButton.style.display = "none";
         PlacingPointsWallframes = false;
         this.ResetWallframePoints();
-        //this.ResetWallPoints();
 
         //Set up colorPicker
         defaultGui = new dat.GUI();
