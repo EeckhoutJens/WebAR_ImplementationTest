@@ -404,14 +404,13 @@ class App {
         /** Perform hit testing using the viewer as origin. */
         this.hitTestSource = await this.xrSession.requestHitTestSource({ space: this.viewerSpace });
 
-        /** Start a rendering loop using this.onXRFrame. */
-
         //Initialize stats panel
         /**stats.showPanel(0);
         stats.dom.style.left = "25px";
         stats.dom.style.top = "700px";
         document.body.appendChild(stats.dom);*/
 
+        /** Start a rendering loop using this.onXRFrame. */
         this.xrSession.requestAnimationFrame(this.onXRFrame);
 
         document.getElementById("StabilizationGif").style.display = "block";
@@ -472,7 +471,6 @@ class App {
                 reticleHitTestResult = hitTestResults[0];
                 this.reticle.visible = true;
                 this.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
-                this.reticle.setRotationFromQuaternion(hitPose.transform.orientation);
                 this.reticle.updateMatrixWorld(true);
 
                 if (IsMovingDeco)
@@ -481,6 +479,32 @@ class App {
                     {
                         DecoToMove.position.set(this.reticle.position.x,this.reticle.position.y,this.reticle.position.z);
                         DecoToMove.setRotationFromQuaternion(hitPose.transform.orientation);
+                    }
+                }
+
+                if (FinishedPlacingWalls)
+                {
+                    for (let currPlane = 0; currPlane < WallPlanePoints.length; ++currPlane)
+                    {
+                        if (this.IsInSpecificPlane(this.reticle.position,WallPlanePoints[currPlane]))
+                        {
+                            let currentPoints = WallPlanePoints[currPlane];
+                            let direction = this.CalculatePlaneDirection(currentPoints[0],currentPoints[3]);
+                            if (IsDirectionX)
+                            {
+                                if (direction.x < 0)
+                                    this.reticle.rotation.y = Math.PI;
+                                else
+                                    this.reticle.rotation.y = 0;
+                            }
+                            else
+                            {
+                                if (direction.z < 0)
+                                    this.reticle.rotation.y = Math.PI / 2;
+                                else
+                                    this.reticle.rotation.y = -Math.PI / 2;
+                            }
+                        }
                     }
                 }
             }
