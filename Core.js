@@ -678,10 +678,6 @@ class App {
                     const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
                     if (anchorPose)
                     {
-                        for (let currObject = 0; currObject < anchor.context.sceneObject.length;++currObject)
-                        {
-                            anchor.context.sceneObject[currObject].matrix.set(anchorPose.transform.matrix);
-                        }
                     }
                     else
                     {
@@ -1280,6 +1276,7 @@ class App {
         const sphereGeometry = new THREE.SphereGeometry(0.05,32,16);
         const sphereMaterial = new THREE.MeshBasicMaterial({color: 0xfff00});
         const sphere = new THREE.Mesh(sphereGeometry,sphereMaterial);
+
         sphere.position.copy(position);
         this.scene.add(sphere)
         return sphere;
