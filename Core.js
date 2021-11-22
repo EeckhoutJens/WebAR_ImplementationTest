@@ -417,8 +417,7 @@ class App {
         document.getElementById("StabilizationGif").style.display = "block";
 
         this.xrSession.addEventListener("select", this.onSelect);
-        this.xrSession.addEventListener("selectstart", this.onSelectStart);
-        this.xrSession.addEventListener("selectend", this.onSelectEnd);
+
         /** To help with working with 3D on the web, we'll use three.js. */
         this.setupThreeJs();
 
@@ -591,6 +590,8 @@ class App {
 
                 BRPoint.copy(InitialPos);
                 BRPoint.y = WallframePoints[0].position.y;
+
+                TopPoint = InitialPos;
 
                 previewPoints.push(BRPoint);
                 previewPoints.push(InitialPos);
@@ -857,7 +858,7 @@ class App {
 
     /** Place a point when the screen is tapped.
      * Once 2 or more points have been placed create lines*/
-        //Ensure to change Z to Y when testing vertical planes
+    //Ensure to change Z to Y when testing vertical planes
     onSelect = (event) =>
     {
         if (!FinishedPlacingWalls)
@@ -866,27 +867,6 @@ class App {
         if (PlacingPointsWallframes)
             this.HandleWallframeSelection(event);
     }
-
-    /**onSelectStart = (event) =>
-    {
-
-        if (inEditMode)
-        {
-            for (let i = 0; i < SpawnedWallTrims.length; ++i)
-            {
-                let distanceToMarker = SpawnedWallTrims[i].position.distanceToSquared(this.reticle.position);
-                if (distanceToMarker < MinDistance)
-                {
-                    isMovingTrim = true;
-                }
-            }
-        }
-    }
-
-    onSelectEnd = (event) =>
-    {
-        isMovingTrim = false;
-    }*/
 
     HandleWallSelection(event)
     {
@@ -1028,8 +1008,17 @@ class App {
 
     HandleWallframeSelection(event)
     {
-            //Select bottom left - top right
-            let createdSphere = this.CreateSphere(this.reticle.position);
+        //Select bottom left - top right
+        let createdSphere;
+        if (WallframePoints.length === 0)
+        {
+             createdSphere = this.CreateSphere(this.reticle.position);
+        }
+
+        else
+        {
+            createdSphere = this.CreateSphere(TopPoint);
+        }
 
 
                 WallframePoints.push(createdSphere);
