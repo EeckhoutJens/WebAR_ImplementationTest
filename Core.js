@@ -1676,7 +1676,7 @@ class App {
                 }
     }
 
-    GenerateSlicedTrims(loadedMesh, planes,isDoors)
+    GenerateSlicedTrims(loadedMesh, planes,container,isDoors)
     {
         //Need to load 3 trims - left,top,right
         //1 (left), 0 (top), 2 (right)
@@ -1911,7 +1911,7 @@ class App {
                     UsedClippingPlanesWallFrames.push(usedClippingPlanes);
                 }
                 app.scene.add(trims);
-                return trims;
+                container.push(trims);
         }
 
     }
@@ -1927,8 +1927,7 @@ class App {
                     defaultTrim = child.parent;
                 }
             });
-            let trims = app.GenerateSlicedTrims(defaultTrim,WallframePlanes,false);
-            ConnectedWallframes.push(trims);
+            app.GenerateSlicedTrims(defaultTrim,WallframePlanes,ConnectedWallframes,false);
         })
     }
 
@@ -1943,8 +1942,7 @@ class App {
                     defaultTrim = child.parent;
                 }
             });
-            let trims = app.GenerateSlicedTrims(defaultTrim,DoorPlanes,true);
-            SpawnedDoorTrims.push(trims);
+            app.GenerateSlicedTrims(defaultTrim,DoorPlanes,SpawnedDoorTrims,true);
         })
     }
 
