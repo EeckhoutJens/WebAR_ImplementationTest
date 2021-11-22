@@ -1,3 +1,3 @@
-# WebAR_ImplementationTest
-Project to experiment with WebAR and some of its features
+# WebAR_WallDecorating
+Project to visualize certain wall decorations using WebXR
 https://eeckhoutjens.github.io/WebAR_WallDecorating/
