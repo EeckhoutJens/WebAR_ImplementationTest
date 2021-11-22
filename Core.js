@@ -563,6 +563,47 @@ class App {
                 previewLine = line;
             }
 
+            //Draw preview lines while placing points to define WallFrames
+            if (PlacingPointsWallframes && WallframePoints.length !== 0)
+            {
+               this.scene.remove(previewLine);
+               let previewPoints = [];
+                let InitialPos = new THREE.Vector3(0,0,0);
+                let LTPoint = new THREE.Vector3(0,0,0);
+                let BRPoint = new THREE.Vector3(0,0,0);
+                InitialPos.copy(this.reticle.position);
+
+                //CODE TO TEST ON FLAT PLAINS - REMOVE FOR PROPER TESTING
+                InitialPos.y = 0.5;
+
+                LTPoint.copy(WallframePoints[0].position);
+                LTPoint.y = InitialPos.y;
+
+                this.CalculatePlaneDirection(WallframePoints[0].position,InitialPos);
+                if (IsDirectionX)
+                {
+                    InitialPos.z = WallframePoints[0].position.z;
+                }
+                else
+                {
+                    InitialPos.x = WallframePoints[0].position.x;
+                }
+
+                BRPoint.copy(InitialPos);
+                BRPoint.y = WallframePoints[0].position.y;
+
+                previewPoints.push(BRPoint);
+                previewPoints.push(InitialPos);
+                previewPoints.push(LTPoint);
+                previewPoints.push(WallframePoints[0].position);
+
+                const material = new THREE.LineBasicMaterial({color: 0xff0000});
+                const geometry = new THREE.BufferGeometry().setFromPoints(previewPoints);
+                const line = new THREE.Line(geometry,material);
+                this.scene.add(line);
+                previewLine = line;
+            }
+
             // only update the object's position if it's still in the list
             // of frame.trackedAnchors
             // Update the position of all the anchored objects based on the currently reported positions of their anchors
@@ -597,7 +638,8 @@ class App {
                 });
 
                 all_previous_anchors = tracked_anchors;
-            } else {
+            }
+            else {
                 all_previous_anchors.forEach(anchor =>
                 {
                     for (let currObject = 0; currObject < anchor.context.sceneObject.length;++currObject)
@@ -825,7 +867,7 @@ class App {
             this.HandleWallframeSelection(event);
     }
 
-    onSelectStart = (event) =>
+    /**onSelectStart = (event) =>
     {
 
         if (inEditMode)
@@ -844,7 +886,7 @@ class App {
     onSelectEnd = (event) =>
     {
         isMovingTrim = false;
-    }
+    }*/
 
     HandleWallSelection(event)
     {
@@ -1217,6 +1259,8 @@ class App {
 
     DrawDoor()
     {
+        this.scene.remove(previewLine);
+        previewLine = null;
         var linePoints = [];
         linePoints.push(WallframePoints[2].position.clone());
         linePoints.push(WallframePoints[0].position.clone());
