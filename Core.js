@@ -662,7 +662,7 @@ class App {
             // only update the object's position if it's still in the list
             // of frame.trackedAnchors
             // Update the position of all the anchored objects based on the currently reported positions of their anchors
-            const tracked_anchors = frame.trackedAnchors;
+            /**const tracked_anchors = frame.trackedAnchors;
             if(tracked_anchors){
                 all_previous_anchors.forEach(anchor => {
                     if(!tracked_anchors.has(anchor))
@@ -701,7 +701,7 @@ class App {
                 });
 
                 all_previous_anchors = new Set();
-            }
+            }*/
 
             /** Render the scene with THREE.WebGLRenderer. */
             this.renderer.render(this.scene, this.camera)
