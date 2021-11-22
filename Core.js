@@ -108,6 +108,7 @@ let selectedFrame = false;
 let SpawnedDecorations = [];
 let HitPlaneDirection;
 let IsDirectionX = false;
+let IsMoveDirectionX = false;
 let CurrentFrame;
 let pmremGenerator;
 let all_previous_anchors = new Set();
@@ -1019,8 +1020,6 @@ class App {
         {
             createdSphere = this.CreateSphere(TopPoint);
         }
-
-
                 WallframePoints.push(createdSphere);
 
                 if (WallframePoints.length === 2)
@@ -1146,7 +1145,7 @@ class App {
     MoveWallFrameWidth()
     {
         app.ResetHelpers();
-        if (IsDirectionX)
+        if (IsMoveDirectionX)
         {
             let change = paramsWallFrameWidth.width - FrameToMove.position.x;
             FrameToMove.position.x = paramsWallFrameWidth.width;
@@ -2209,11 +2208,11 @@ class App {
             //Check if given position is within boundary
             if (IsDirectionX)
             {
-                if (position.x <= highest.x + 0.25 && position.x >= lowest.x - 0.25
-                    &&position.y <= highest.y + 0.25 && position.y >= lowest.y - 0.25)
+                if (position.x <= highest.x && position.x >= lowest.x
+                    &&position.y <= highest.y  && position.y >= lowest.y)
                 {
                     let distanceToMarker = Math.abs(currentPoints[0].z - position.z);
-                    if (distanceToMarker < 0.5)
+                    if (distanceToMarker < 0.1)
                     {
                         inside = true;
                         HitPlaneDirection = direction;
@@ -2222,11 +2221,11 @@ class App {
             }
             else
             {
-                if (position.z <= highest.z + 0.25 && position.z >= lowest.z - 0.25
-                    && position.y <= highest.y + 0.25 && position.y >= lowest.y - 0.25)
+                if (position.z <= highest.z && position.z >= lowest.z
+                    && position.y <= highest.y && position.y >= lowest.y)
                 {
                     let distanceToMarker = Math.abs(currentPoints[0].x - position.x);
-                    if (distanceToMarker < 0.5)
+                    if (distanceToMarker < 0.1)
                     {
                         inside = true;
                         HitPlaneDirection = direction;
@@ -2532,8 +2531,10 @@ class App {
                             if (this.IsInSpecificPlane(FrameToMove.children[0].position,currentPlanePoints))
                             {
                                 //Force recalculation of IsDirection to prevent bugs
-                                this.CalculatePlaneDirection(FrameToMove.children[0].position,FrameToMove.children[3].position)
-                                if (IsDirectionX)
+                                let direction = this.CalculatePlaneDirection(FrameToMove.children[0].position,FrameToMove.children[3].position)
+                                let absDirection = new THREE.Vector3(Math.abs(direction.x),Math.abs(direction.y),Math.abs(direction.z))
+                                IsMoveDirectionX = absDirection.x > absDirection.z;
+                                if (IsMoveDirectionX)
                                     WidthController = transformGui.add(paramsWallFrameWidth,'width',currentPlanePoints[0].x, currentPlanePoints[3].x).onChange(this.MoveWallFrameWidth);
                                 else
                                     WidthController = transformGui.add(paramsWallFrameWidth,'width',currentPlanePoints[0].z, -currentPlanePoints[3].z).onChange(this.MoveWallFrameWidth);
