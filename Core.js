@@ -140,6 +140,7 @@ let WallframesButton;
 let WindowsButton;
 let PlaceButton;
 let RemoveButton;
+let RemoveAllButton;
 let RestartButton;
 let EditButton;
 let SelectButton;
@@ -473,15 +474,6 @@ class App {
                 this.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
                 this.reticle.updateMatrixWorld(true);
 
-                if (IsMovingDeco)
-                {
-                    if (DecoToMove)
-                    {
-                        DecoToMove.position.set(this.reticle.position.x,this.reticle.position.y,this.reticle.position.z);
-                        DecoToMove.setRotationFromQuaternion(hitPose.transform.orientation);
-                    }
-                }
-
                 if (FinishedPlacingWalls)
                 {
                     for (let currPlane = 0; currPlane < WallPlanePoints.length; ++currPlane)
@@ -504,6 +496,17 @@ class App {
                                 else
                                     this.reticle.rotation.y = -Math.PI / 2;
                             }
+                            break;
+                        }
+                    }
+
+
+                    if (IsMovingDeco)
+                    {
+                        if (DecoToMove)
+                        {
+                            DecoToMove.position.set(this.reticle.position.x,this.reticle.position.y,this.reticle.position.z);
+                            DecoToMove.rotation.y = this.reticle.rotation.y;
                         }
                     }
                 }
@@ -2319,7 +2322,9 @@ class App {
                 RestartButton.style.display = "none";
                 document.getElementById("OpenButton").style.display = "none";
                 SelectButton.style.display = "block";
+                RemoveAllButton.style.display = "block";
                 RemoveButton.style.display = "block";
+                EditButton.textContent = 'Add';
                 defaultGui.hide();
                 transformGui.show();
                 if (SpawnedWallTrims.length > 0)
@@ -2332,11 +2337,13 @@ class App {
             }
             else
             {
+                EditButton.textContent = 'Edit';
                 PlaceButton.style.display = "block";
                 RestartButton.style.display = "block";
                 document.getElementById("OpenButton").style.display = "block";
                 SelectButton.style.display = "none";
-                RemoveButton.style.display = "none";
+                RemoveAllButton.style.display = "none";
+                RemoveButton.style.display = 'none';
                 defaultGui.show();
                 transformGui.hide();
                 if (WidthController)
@@ -2371,15 +2378,31 @@ class App {
         document.body.appendChild(SelectButton);
     }
 
+    CreateRemoveAllButton()
+    {
+        let left = 'calc(85% - 50px)';
+        let text = 'Remove All';
+        RemoveAllButton = this.CreateButton(text,left)
+        RemoveAllButton.style.bottom = 'calc(20%)';
+
+        RemoveAllButton.onclick = function ()
+        {
+            app.RemoveAllClicked();
+        }
+
+        document.body.appendChild(RemoveAllButton);
+    }
+
+    //Removes only the selected element
     CreateRemoveButton()
     {
         let left = 'calc(85% - 50px)';
-        let text = 'Remove';
-        RemoveButton = this.CreateButton(text,left)
+        let text = 'Remove Selected';
+        RemoveButton = this.CreateButton(text, left);
 
         RemoveButton.onclick = function ()
         {
-            app.RemoveClicked();
+            app.RemoveSelectedClicked();
         }
 
         document.body.appendChild(RemoveButton);
@@ -2534,7 +2557,7 @@ class App {
         }
     }
 
-    RemoveClicked()
+    RemoveAllClicked()
     {
         this.ResetDecorations();
         this.ResetWallTrims();
@@ -2544,17 +2567,72 @@ class App {
         this.ResetDoorTrims();
     }
 
+    RemoveSelectedClicked()
+    {
+        //1.Check what is selected
+        //2.Remove selected element from appropriate container and scene
+
+        if (selectedFrame)
+        {
+           this.scene.remove(FrameToMove);
+           const frameIndex = ConnectedWallframes.indexOf(FrameToMove);
+           if (frameIndex > -1)
+           {
+               ConnectedWallframes.splice(frameIndex,1);
+           }
+
+           //In this case, we also need to make sure we remove related clipping planes from container
+            const clippingIndex = UsedClippingPlanesWallFrames.indexOf(FtMClippingPlanes);
+           if (clippingIndex > -1)
+           {
+               UsedClippingPlanesWallFrames.splice(clippingIndex,1);
+           }
+           FrameToMove = null;
+           FtMClippingPlanes = null;
+           selectedFrame = false;
+        }
+
+        if (TrimsToMove)
+        {
+            for (let currentTrim = 0; currentTrim < TrimsToMove.length; ++currentTrim)
+            {
+                this.scene.remove(TrimsToMove[currentTrim]);
+            }
+
+            const index = ConnectedWallTrims.indexOf(TrimsToMove);
+            if (index > -1)
+            {
+                ConnectedWallTrims.splice(index,1);
+            }
+            TrimsToMove = null;
+        }
+
+        if (IsMovingDeco)
+        {
+            this.scene.remove(DecoToMove);
+            const index = SpawnedDecorations.indexOf(DecoToMove);
+            if (index > -1)
+            {
+                SpawnedDecorations.splice(index,1);
+            }
+            IsMovingDeco = false;
+            DecoToMove = null;
+        }
+    }
+
     DoneClicked()
     {
         document.getElementById("OpenButton").style.display = "block";
         this.CreatePlaceButton();
         this.CreateRestartButton();
+        this.CreateRemoveAllButton();
         this.CreateRemoveButton();
         this.CreateEditButton();
         this.CreateSelectButton();
         DoneButton.style.display = "none"
         WallframesButton.style.display = 'none';
         SelectButton.style.display = "none";
+        RemoveAllButton.style.display = "none";
         RemoveButton.style.display = "none";
         PlacingPointsWallframes = false;
         this.ResetWallframePoints();
