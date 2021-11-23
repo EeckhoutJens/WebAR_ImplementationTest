@@ -1686,6 +1686,7 @@ class App {
             let trims = new THREE.Group();
 
             let rightDirection = this.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
+            let upDirection = this.CalculatePlaneDirection(currentPoints[1],currentPoints[0]);
             let absRightDirection = new THREE.Vector3(0,0,0);
             absRightDirection.copy(rightDirection);
             absRightDirection.x = Math.abs(absRightDirection.x);
@@ -1736,6 +1737,9 @@ class App {
                 let leftTrim = loadedMesh.clone();
                 box = new THREE.Box3().setFromObject(leftTrim);
                 box.getSize(dimensions);
+
+                let nrToSpawn = Math.ceil(upDirection.y / dimensions.x)
+
                 leftTrim.rotateZ(-Math.PI / 2);
 
                 leftTrim.position.copy(currentPoints[1]);
@@ -1763,16 +1767,61 @@ class App {
 
 
                 leftTrim.position.y += dimensions.x / 2;
-
                 let YClip = new THREE.Vector3(0,-1,0);
                 let posYClip = new THREE.Vector3(0,1,0);
-                app.DoorClip(LTPlane,leftTrim,YClip,false);
 
                 if (!isDoors)
                     app.DoorClip(LBPlane,leftTrim,posYClip,false);
 
                 trims.add(leftTrim);
-                //app.scene.add(leftTrim);
+
+                if (nrToSpawn === 1)
+                {
+                    app.DoorClip(LTPlane,leftTrim,YClip,false);
+
+                    if (!isDoors)
+                        app.DoorClip(LBPlane,leftTrim,posYClip,false);
+                }
+                else
+                {
+                    for (let additionalTrims = 0; additionalTrims < nrToSpawn - 1;++additionalTrims)
+                    {
+                        let extraTrim = loadedMesh.clone();
+
+                        extraTrim.rotateZ(-Math.PI / 2);
+
+                        extraTrim.position.copy(currentPoints[1]);
+                        if (IsX)
+                        {
+                            if (rightDirection.x < 0)
+                            {
+                                extraTrim.rotateX(Math.PI);
+                            }
+                        }
+                        else
+                        {
+                            if (rightDirection.z < 0)
+                            {
+                                extraTrim.rotateX(-Math.PI / 2);
+                            }
+
+                            else
+                            {
+                                extraTrim.rotateX(Math.PI / 2);
+                            }
+                        }
+
+
+                        extraTrim.position.y += dimensions.x / 2;
+                        extraTrim.position.y += dimensions.x * (additionalTrims + 1);
+
+                        if (additionalTrims === (nrToSpawn - 1))
+                            app.DoorClip(LTPlane,extraTrim,YClip,false);
+
+                        trims.add(extraTrim);
+
+                    }
+                }
 
             //Load right trim
 
@@ -2278,7 +2327,7 @@ class App {
                 let startPoint = new THREE.Vector3(0,0,0);
 
                 startPoint.copy(startPosition);
-                startPoint.y = this.reticle.position.y;
+                startPoint.y = app.reticle.position.y;
 
                 app.GenerateTrims(trimToSpawn, startPoint, direction, absDirection, IsX, DecorationTypes.WallTrim);
             }
