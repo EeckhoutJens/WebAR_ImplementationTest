@@ -1687,7 +1687,7 @@ class App {
         {
             let currentPoints = planes[currentPlane];
             let usedClippingPlanes = new THREE.Group();
-            let clippedTrims = new THREE.Group();
+            let clippedTrims = [];
             let trims = new THREE.Group();
 
             let rightDirection = this.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
@@ -1782,12 +1782,12 @@ class App {
                 if (!isDoors)
                     app.DoorClip(LBPlane,leftTrim,posYClip,false);
 
-                clippedTrims.add(leftTrim);
+                clippedTrims.push(leftTrim);
 
                 if (nrToSpawnY === 1)
                 {
                     app.DoorClip(LTPlane,leftTrim,YClip,false);
-                    clippedTrims.add(leftTrim);
+                    clippedTrims.push(leftTrim);
                 }
                 else
                 {
@@ -1825,7 +1825,7 @@ class App {
                         if (additionalTrims === (nrToSpawnY - 2))
                         {
                             app.DoorClip(LTPlane,extraTrim,YClip,false);
-                            clippedTrims.add(extraTrim);
+                            clippedTrims.push(extraTrim);
                         }
 
                         trims.add(extraTrim);
@@ -1889,12 +1889,12 @@ class App {
             if (!isDoors)
                 app.DoorClip(RBPlane,rightTrim,posYClip,false);
 
-            clippedTrims.add(rightTrim);
+            clippedTrims.push(rightTrim);
 
             if (nrToSpawnY === 1)
             {
                 app.DoorClip(RTPlane,rightTrim,YClip,false);
-                clippedTrims.add(rightTrim);
+                clippedTrims.push(rightTrim);
             }
             else
             {
@@ -1924,7 +1924,7 @@ class App {
                     if (additionalTrims === (nrToSpawnY - 2))
                     {
                         app.DoorClip(RTPlane,extraTrim,YClip,false);
-                        clippedTrims.add(extraTrim);
+                        clippedTrims.push(extraTrim);
                     }
 
                     trims.add(extraTrim);
@@ -1964,12 +1964,12 @@ class App {
 
                 trims.add(topTrim);
                 app.DoorClip(LTPlane,topTrim,posYClip,false)
-                clippedTrims.add(topTrim);
+                clippedTrims.push(topTrim);
 
                 if (nrToSpawnRight === 1)
                 {
                     app.DoorClip(RTPlane,topTrim,posYClip,false);
-                    clippedTrims.add(topTrim);
+                    clippedTrims.push(topTrim);
                 }
                 else
                 {
@@ -2010,10 +2010,10 @@ class App {
                         if (additionalTrim === nrToSpawnRight - 2)
                         {
                             app.DoorClip(RTPlane,extraTrim,posYClip,false);
-                            clippedTrims.add(extraTrim);
+                            clippedTrims.push(extraTrim);
                         }
 
-                        trims.add(topTrim);
+                        trims.add(extraTrim);
                     }
                 }
 
@@ -2051,11 +2051,12 @@ class App {
                     trims.add(bottomTrim);
 
                     app.DoorClip(LBPlane,bottomTrim,YClip,false);
-                    clippedTrims.add(bottomTrim);
+                    clippedTrims.push(bottomTrim);
 
                     if (nrToSpawnRight === 1)
                     {
                         app.DoorClip(RBPlane,bottomTrim,YClip,false);
+                        clippedTrims.push(bottomTrim);
                     }
                     else
                     {
@@ -2091,7 +2092,7 @@ class App {
                             if (additionalTrim === nrToSpawnRight - 2)
                             {
                                 app.DoorClip(RBPlane,extraTrim,YClip,false);
-                                clippedTrims.add(extraTrim);
+                                clippedTrims.push(extraTrim);
                             }
                             trims.add(extraTrim);
                         }
@@ -2145,20 +2146,20 @@ class App {
         if (trims.children.length > 4)
         {
             //Reclip left trim
-            this.DoorClip(clippingPlanes.children[1],SelectedClippedFrameTrims.children[0],PosYClip,false);
-            this.DoorClip(clippingPlanes.children[0],SelectedClippedFrameTrims.children[1],NegYClip,false);
+            this.DoorClip(clippingPlanes.children[1],SelectedClippedFrameTrims[0],PosYClip,false);
+            this.DoorClip(clippingPlanes.children[0],SelectedClippedFrameTrims[1],NegYClip,false);
 
             //Reclip right trim
-            this.DoorClip(clippingPlanes.children[3],SelectedClippedFrameTrims.children[2],PosYClip,false);
-            this.DoorClip(clippingPlanes.children[2],SelectedClippedFrameTrims.children[3],NegYClip,false);
+            this.DoorClip(clippingPlanes.children[3],SelectedClippedFrameTrims[2],PosYClip,false);
+            this.DoorClip(clippingPlanes.children[2],SelectedClippedFrameTrims[3],NegYClip,false);
 
             //Reclip top trim
-            this.DoorClip(clippingPlanes.children[0],SelectedClippedFrameTrims.children[4],PosYClip,false);
-            this.DoorClip(clippingPlanes.children[2],SelectedClippedFrameTrims.children[5],PosYClip,false);
+            this.DoorClip(clippingPlanes.children[0],SelectedClippedFrameTrims[4],PosYClip,false);
+            this.DoorClip(clippingPlanes.children[2],SelectedClippedFrameTrims[5],PosYClip,false);
 
             //Reclip bottom trim
-            this.DoorClip(clippingPlanes.children[1],SelectedClippedFrameTrims.children[6],NegYClip,false);
-            this.DoorClip(clippingPlanes.children[3],SelectedClippedFrameTrims.children[7],NegYClip,false);
+            this.DoorClip(clippingPlanes.children[1],SelectedClippedFrameTrims[6],NegYClip,true);
+            this.DoorClip(clippingPlanes.children[3],SelectedClippedFrameTrims[7],NegYClip,true);
         }
         else
         {
