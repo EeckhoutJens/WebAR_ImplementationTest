@@ -52,6 +52,8 @@ let FrameToMove;
 let DecoToMove;
 let IsMovingDeco;
 let FtMClippingPlanes;
+let SelectedClippedFrameTrims;
+let ClippedFrameTrims = [];
 const SpawnedDoorTrims = [];
 
 const SetIDs = [];
@@ -583,7 +585,7 @@ class App {
                 InitialPos.copy(this.reticle.position);
 
                 //CODE TO TEST ON FLAT PLAINS - REMOVE FOR PROPER TESTING
-                //InitialPos.y = 0.5;
+                InitialPos.y = 2;
 
                 LTPoint.copy(WallframePoints[0].position);
                 LTPoint.y = InitialPos.y;
@@ -626,7 +628,7 @@ class App {
                 InitialPos.copy(this.reticle.position);
 
                 //CODE TO TEST ON FLAT PLAINS - REMOVE FOR PROPER TESTING
-                //InitialPos.y = 0.5;
+                InitialPos.y = 2;
 
                 LTPoint.copy(DoorPoints[0].position);
                 LTPoint.y = InitialPos.y;
@@ -662,7 +664,7 @@ class App {
             // only update the object's position if it's still in the list
             // of frame.trackedAnchors
             // Update the position of all the anchored objects based on the currently reported positions of their anchors
-            /**const tracked_anchors = frame.trackedAnchors;
+            const tracked_anchors = frame.trackedAnchors;
             if(tracked_anchors){
                 all_previous_anchors.forEach(anchor => {
                     if(!tracked_anchors.has(anchor))
@@ -678,6 +680,10 @@ class App {
                     const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
                     if (anchorPose)
                     {
+                        for (let currObject = 0; currObject < anchor.context.sceneObject.length;++currObject)
+                        {
+                            anchor.context.sceneObject[currObject].matrix.set(anchorPose.transform.matrix);
+                        }
                     }
                     else
                     {
@@ -701,7 +707,7 @@ class App {
                 });
 
                 all_previous_anchors = new Set();
-            }*/
+            }
 
             /** Render the scene with THREE.WebGLRenderer. */
             this.renderer.render(this.scene, this.camera)
@@ -927,7 +933,7 @@ class App {
         {
                 if (WallPoints.length !== 0)
                 {
-                    let distanceToMarker = WallPoints[WallPoints.length - 2].position.distanceToSquared(this.reticle.position);
+                    let distanceToMarker = WallPoints[WallPoints.length - 1].position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         FinishedPlacingWalls = true;
@@ -941,7 +947,7 @@ class App {
                         document.getElementById("WallsIcon").style.display = "none";
                     }
 
-                    distanceToMarker = WallPoints[0].position.distanceToSquared(this.reticle.position);
+                    distanceToMarker = WallPoints[1].position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         let Point1;
@@ -1014,8 +1020,6 @@ class App {
                 anchor.context.sceneObject = [];
                 Point1.anchor = anchor;
                 Point2.anchor = anchor;
-                Point1.updateMatrixWorld(true);
-                Point2.updateMatrixWorld(true);
 
                 anchor.context.sceneObject.push(Point1);
                 anchor.context.sceneObject.push(Point2);
@@ -1049,7 +1053,7 @@ class App {
                         ConstrainedYPosWalls = WallPoints[1].position.y;
 
                         //DELETE - Just added it now for testing purposes
-                        //ConstrainedYPosWalls = 1.5;
+                        ConstrainedYPosWalls = 2;
 
                         WallHeight = ConstrainedYPosWalls - WallPoints[0].position.y;
                         this.ResetWallPoints();
@@ -1079,7 +1083,7 @@ class App {
                 if (WallframePoints.length === 2)
                 {
                     //Generate top left
-                    //WallframePoints[1].position.y = 0.5;
+                    WallframePoints[1].position.y = 2;
                     let topLeftPosition = WallframePoints[0].position.clone();
                     topLeftPosition.y = WallframePoints[1].position.y;
                     let topLeftSphere = this.CreateSphere(topLeftPosition);
@@ -1113,7 +1117,7 @@ class App {
         if (DoorPoints.length === 2)
         {
             //Generate top left
-            //DoorPoints[1].position.y = 0.5;
+            DoorPoints[1].position.y = 2;
             let topLeftPosition = DoorPoints[0].position.clone();
             topLeftPosition.y = DoorPoints[1].position.y;
             let topLeftSphere = this.CreateSphere(topLeftPosition);
@@ -1683,6 +1687,7 @@ class App {
         {
             let currentPoints = planes[currentPlane];
             let usedClippingPlanes = new THREE.Group();
+            let clippedTrims = new THREE.Group();
             let trims = new THREE.Group();
 
             let rightDirection = this.CalculatePlaneDirection(currentPoints[1],currentPoints[2]);
@@ -1738,7 +1743,7 @@ class App {
                 box = new THREE.Box3().setFromObject(leftTrim);
                 box.getSize(dimensions);
 
-                let nrToSpawn = Math.ceil(upDirection.y / dimensions.x)
+                let nrToSpawnY = Math.ceil(upDirection.y / dimensions.x)
 
                 leftTrim.rotateZ(-Math.PI / 2);
 
@@ -1765,26 +1770,28 @@ class App {
                     }
                 }
 
+                let nrToSpawnRight = Math.ceil(length / dimensions.x);
+
 
                 leftTrim.position.y += dimensions.x / 2;
                 let YClip = new THREE.Vector3(0,-1,0);
                 let posYClip = new THREE.Vector3(0,1,0);
 
+                trims.add(leftTrim);
+
                 if (!isDoors)
                     app.DoorClip(LBPlane,leftTrim,posYClip,false);
 
-                trims.add(leftTrim);
+                clippedTrims.add(leftTrim);
 
-                if (nrToSpawn === 1)
+                if (nrToSpawnY === 1)
                 {
                     app.DoorClip(LTPlane,leftTrim,YClip,false);
-
-                    if (!isDoors)
-                        app.DoorClip(LBPlane,leftTrim,posYClip,false);
+                    clippedTrims.add(leftTrim);
                 }
                 else
                 {
-                    for (let additionalTrims = 0; additionalTrims < nrToSpawn - 1;++additionalTrims)
+                    for (let additionalTrims = 0; additionalTrims < nrToSpawnY - 1;++additionalTrims)
                     {
                         let extraTrim = loadedMesh.clone();
 
@@ -1815,8 +1822,11 @@ class App {
                         extraTrim.position.y += dimensions.x / 2;
                         extraTrim.position.y += dimensions.x * (additionalTrims + 1);
 
-                        if (additionalTrims === (nrToSpawn - 2))
+                        if (additionalTrims === (nrToSpawnY - 2))
+                        {
                             app.DoorClip(LTPlane,extraTrim,YClip,false);
+                            clippedTrims.add(extraTrim);
+                        }
 
                         trims.add(extraTrim);
                     }
@@ -1874,13 +1884,53 @@ class App {
 
                 rightTrim.position.copy(currentPoints[2]);
                 rightTrim.position.y += dimensions.x / 2;
-                app.DoorClip(RTPlane,rightTrim,YClip,false);
-
-                if (!isDoors)
-                    app.DoorClip(RBPlane,rightTrim,posYClip,false);
-
                 trims.add(rightTrim);
-                //app.scene.add(rightTrim);
+
+            if (!isDoors)
+                app.DoorClip(RBPlane,rightTrim,posYClip,false);
+
+            clippedTrims.add(rightTrim);
+
+            if (nrToSpawnY === 1)
+            {
+                app.DoorClip(RTPlane,rightTrim,YClip,false);
+                clippedTrims.add(rightTrim);
+            }
+            else
+            {
+                for (let additionalTrims = 0; additionalTrims < nrToSpawnY - 1;++additionalTrims)
+                {
+                    let extraTrim = loadedMesh.clone();
+
+                    extraTrim.rotateZ(Math.PI / 2);
+
+                    if (IsX)
+                    {
+                        if (rightDirection.x < 0)
+                            extraTrim.rotateX(Math.PI);
+                    }
+                    else
+                    {
+                        if (rightDirection.z < 0)
+                            extraTrim.rotateX(Math.PI / 2);
+                        else
+                            extraTrim.rotateX(-Math.PI / 2);
+                    }
+
+                    extraTrim.position.copy(currentPoints[2]);
+                    extraTrim.position.y += dimensions.x / 2;
+                    extraTrim.position.y += dimensions.x * (additionalTrims + 1);
+
+                    if (additionalTrims === (nrToSpawnY - 2))
+                    {
+                        app.DoorClip(RTPlane,extraTrim,YClip,false);
+                        clippedTrims.add(extraTrim);
+                    }
+
+                    trims.add(extraTrim);
+                }
+            }
+
 
             //Load top trim
                 let topTrim = loadedMesh.clone();
@@ -1897,8 +1947,6 @@ class App {
 
 
                     topTrim.position.x += dimensions.x / 2;
-                    app.DoorClip(LTPlane,topTrim,posYClip,false)
-                    app.DoorClip(RTPlane,topTrim,posYClip,false);
                 }
                 else
                 {
@@ -1912,11 +1960,64 @@ class App {
                         topTrim.rotateY(-Math.PI/2);
                     topTrim.position.z += dimensions.x / 2;
                     topTrim.position.y -= dimensions.y;
-                    app.DoorClip(LTPlane,topTrim,posYClip,false)
-                    app.DoorClip(RTPlane,topTrim,posYClip,false);
                 }
+
                 trims.add(topTrim);
-                //app.scene.add(topTrim);
+                app.DoorClip(LTPlane,topTrim,posYClip,false)
+                clippedTrims.add(topTrim);
+
+                if (nrToSpawnRight === 1)
+                {
+                    app.DoorClip(RTPlane,topTrim,posYClip,false);
+                    clippedTrims.add(topTrim);
+                }
+                else
+                {
+                    for (let additionalTrim = 0; additionalTrim < nrToSpawnRight - 1; ++additionalTrim)
+                    {
+                        let extraTrim = loadedMesh.clone();
+                        extraTrim.position.copy(currentPoints[0]);
+                        if (IsX)
+                        {
+                            if (rightDirection.x < 0)
+                            {
+                                extraTrim.position.copy(currentPoints[3]);
+                                extraTrim.rotateX(Math.PI);
+                            }
+                            else
+                                extraTrim.position.y -= dimensions.y;
+
+
+                            extraTrim.position.x += dimensions.x / 2;
+                            extraTrim.position.x += dimensions.x * (additionalTrims + 1);
+
+                        }
+                        else
+                        {
+                            if (rightDirection.z < 0)
+                            {
+                                extraTrim.position.copy(currentPoints[3]);
+                                extraTrim.rotateY(Math.PI / 2);
+                            }
+
+                            else
+                                extraTrim.rotateY(-Math.PI/2);
+                            extraTrim.position.z += dimensions.x / 2;
+                            extraTrim.position.z += dimensions.x * (additionalTrims + 1);
+                            extraTrim.position.y -= dimensions.y;
+                        }
+
+                        if (additionalTrim === nrToSpawnRight - 2)
+                        {
+                            app.DoorClip(RTPlane,extraTrim,posYClip,false);
+                            clippedTrims.add(extraTrim);
+                        }
+
+                        trims.add(topTrim);
+                    }
+                }
+
+
 
                 if (!isDoors)
                 {
@@ -1933,8 +2034,6 @@ class App {
                             bottomTrim.rotateX(Math.PI);
                         }
                         bottomTrim.position.x += dimensions.x / 2;
-                        app.DoorClip(LBPlane,bottomTrim,YClip,false);
-                        app.DoorClip(RBPlane,bottomTrim,YClip,false);
                     }
                     else
                     {
@@ -1948,12 +2047,58 @@ class App {
                             bottomTrim.rotateY(-Math.PI/2);
                         }
                         bottomTrim.position.z += dimensions.x / 2;
-                        app.DoorClip(LBPlane,bottomTrim,YClip,false);
-                        app.DoorClip(RBPlane,bottomTrim,YClip,false);
-
                     }
                     trims.add(bottomTrim);
+
+                    app.DoorClip(LBPlane,bottomTrim,YClip,false);
+                    clippedTrims.add(bottomTrim);
+
+                    if (nrToSpawnRight === 1)
+                    {
+                        app.DoorClip(RBPlane,bottomTrim,YClip,false);
+                    }
+                    else
+                    {
+                        for (let additionalTrim = 0; additionalTrim < nrToSpawnRight - 1; ++additionalTrim)
+                        {
+                            //Load bottom trim
+                            let extraTrim = loadedMesh.clone();
+                            extraTrim.position.copy(currentPoints[1]);
+
+                            if (IsX)
+                            {
+                                if (rightDirection.x < 0)
+                                {
+                                    extraTrim.position.copy(currentPoints[2]);
+                                    extraTrim.position.y += dimensions.y;
+                                    extraTrim.rotateX(Math.PI);
+                                }
+                                extraTrim.position.x += dimensions.x / 2;
+                            }
+                            else
+                            {
+                                if (rightDirection.z < 0)
+                                {
+                                    extraTrim.position.copy(currentPoints[2]);
+                                    extraTrim.rotateY(Math.PI / 2);
+                                }
+                                else
+                                {
+                                    extraTrim.rotateY(-Math.PI/2);
+                                }
+                                extraTrim.position.z += dimensions.x / 2;
+                            }
+                            if (additionalTrim === nrToSpawnRight - 2)
+                            {
+                                app.DoorClip(RBPlane,extraTrim,YClip,false);
+                                clippedTrims.add(extraTrim);
+                            }
+                            trims.add(extraTrim);
+                        }
+                    }
+
                     UsedClippingPlanesWallFrames.push(usedClippingPlanes);
+                    ClippedFrameTrims.push(clippedTrims);
                 }
                 app.scene.add(trims);
                 container.push(trims);
@@ -1996,21 +2141,45 @@ class App {
         let NegYClip = new THREE.Vector3(0,-1,0);
         let PosYClip = new THREE.Vector3(0,1,0);
 
-        //Reclip left trim
-        this.DoorClip(clippingPlanes.children[0],trims.children[0],NegYClip,false);
-        this.DoorClip(clippingPlanes.children[1],trims.children[0],PosYClip,false);
+        //In case frame consists of more than 4 trims we need to determine which ones need to get clipped
+        if (trims.children.length > 4)
+        {
+            //Reclip left trim
+            this.DoorClip(clippingPlanes.children[1],SelectedClippedFrameTrims.children[0],PosYClip,false);
+            this.DoorClip(clippingPlanes.children[0],SelectedClippedFrameTrims.children[1],NegYClip,false);
 
-        //Reclip right trim
-        this.DoorClip(clippingPlanes.children[2],trims.children[1],NegYClip,false);
-        this.DoorClip(clippingPlanes.children[3],trims.children[1],PosYClip,false);
+            //Reclip right trim
+            this.DoorClip(clippingPlanes.children[3],SelectedClippedFrameTrims.children[2],PosYClip,false);
+            this.DoorClip(clippingPlanes.children[2],SelectedClippedFrameTrims.children[3],NegYClip,false);
 
-        //Reclip top trim
-        this.DoorClip(clippingPlanes.children[0],trims.children[2],PosYClip,false);
-        this.DoorClip(clippingPlanes.children[2],trims.children[2],PosYClip,false);
+            //Reclip top trim
+            this.DoorClip(clippingPlanes.children[0],SelectedClippedFrameTrims.children[4],PosYClip,false);
+            this.DoorClip(clippingPlanes.children[2],SelectedClippedFrameTrims.children[5],PosYClip,false);
 
-        //Reclip bottom trim
-        this.DoorClip(clippingPlanes.children[1],trims.children[3],NegYClip,false);
-        this.DoorClip(clippingPlanes.children[3],trims.children[3],NegYClip,false);
+            //Reclip bottom trim
+            this.DoorClip(clippingPlanes.children[1],SelectedClippedFrameTrims.children[6],NegYClip,false);
+            this.DoorClip(clippingPlanes.children[3],SelectedClippedFrameTrims.children[7],NegYClip,false);
+        }
+        else
+        {
+
+            //Reclip left trim
+            this.DoorClip(clippingPlanes.children[0],trims.children[0],NegYClip,false);
+            this.DoorClip(clippingPlanes.children[1],trims.children[0],PosYClip,false);
+
+            //Reclip right trim
+            this.DoorClip(clippingPlanes.children[2],trims.children[1],NegYClip,false);
+            this.DoorClip(clippingPlanes.children[3],trims.children[1],PosYClip,false);
+
+            //Reclip top trim
+            this.DoorClip(clippingPlanes.children[0],trims.children[2],PosYClip,false);
+            this.DoorClip(clippingPlanes.children[2],trims.children[2],PosYClip,false);
+
+            //Reclip bottom trim
+            this.DoorClip(clippingPlanes.children[1],trims.children[3],NegYClip,false);
+            this.DoorClip(clippingPlanes.children[3],trims.children[3],NegYClip,false);
+        }
+
     }
 
     //Ensure to change Z to Y when testing vertical planes
@@ -2700,6 +2869,7 @@ class App {
                     {
                         FrameToMove = currentFrame;
                         FtMClippingPlanes = UsedClippingPlanesWallFrames[i];
+                        SelectedClippedFrameTrims = ClippedFrameTrims[i];
                         this.RecolorSelectedFrame();
                         selectedFrame = true;
                         for (let currPlane = 0; currPlane < WallPlanePoints.length; ++currPlane)
