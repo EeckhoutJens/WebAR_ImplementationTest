@@ -1815,11 +1815,10 @@ class App {
                         extraTrim.position.y += dimensions.x / 2;
                         extraTrim.position.y += dimensions.x * (additionalTrims + 1);
 
-                        if (additionalTrims === (nrToSpawn - 1))
+                        if (additionalTrims === (nrToSpawn - 2))
                             app.DoorClip(LTPlane,extraTrim,YClip,false);
 
                         trims.add(extraTrim);
-
                     }
                 }
 
