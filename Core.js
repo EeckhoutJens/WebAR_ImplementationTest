@@ -956,7 +956,7 @@ class App {
 
                         let anchorPoseP1 = new XRRigidTransform(Point1.position,{x: 0,y: 0,z: 0,w: 1});
                         let anchorPoseP2 = new XRRigidTransform(Point2.position,{x: 0,y: 0,z: 0,w: 1});
-                        frame.createAnchor(anchorPoseP1,this.viewerSpace).then((anchor) =>
+                        frame.createAnchor(anchorPoseP1,this.localReferenceSpace).then((anchor) =>
                         {
                             anchor.context = {};
                             anchor.context.sceneObject = Point1;
@@ -965,7 +965,7 @@ class App {
                             WallPoints.push(Point1);
                         })
 
-                        frame.createAnchor(anchorPoseP2,this.viewerSpace).then((anchor) =>
+                        frame.createAnchor(anchorPoseP2,this.localReferenceSpace).then((anchor) =>
                         {
                             anchor.context = {};
                             anchor.context.sceneObject = Point2;
@@ -1030,7 +1030,7 @@ class App {
 
             let anchorPoseP1 = new XRRigidTransform(Point1.position,{x: 0,y: 0,z: 0,w: 1});
             let anchorPoseP2 = new XRRigidTransform(Point2.position,{x: 0,y: 0,z: 0,w: 1});
-            frame.createAnchor(anchorPoseP1,this.viewerSpace).then((anchor) =>
+            frame.createAnchor(anchorPoseP1,this.localReferenceSpace).then((anchor) =>
             {
                 anchor.context = {};
                 anchor.context.sceneObject = Point1;
@@ -1039,7 +1039,7 @@ class App {
                 WallPoints.push(Point1);
             })
 
-            frame.createAnchor(anchorPoseP2,this.viewerSpace).then((anchor) =>
+            frame.createAnchor(anchorPoseP2,this.localReferenceSpace).then((anchor) =>
             {
                 anchor.context = {};
                 anchor.context.sceneObject = Point2;
