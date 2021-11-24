@@ -669,10 +669,7 @@ class App {
                 all_previous_anchors.forEach(anchor => {
                     if(!tracked_anchors.has(anchor))
                     {
-                        for (let currObject = 0; currObject < anchor.context.sceneObject.length;++currObject)
-                        {
-                            this.scene.remove(anchor.context.sceneObject[currObject]);
-                        }
+                            this.scene.remove(anchor.context.sceneObject);
                     }
                 });
 
@@ -680,17 +677,12 @@ class App {
                     const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
                     if (anchorPose)
                     {
-                        for (let currObject = 0; currObject < anchor.context.sceneObject.length;++currObject)
-                        {
-                            anchor.context.sceneObject[currObject].matrix.fromArray(anchorPose.transform.matrix);
-                        }
+                            anchor.context.sceneObject.matrix.fromArray(anchorPose.transform.matrix);
                     }
                     else
                     {
-                        for (let currObject = 0; currObject < anchor.context.sceneObject.length;++currObject)
-                        {
-                            anchor.context.sceneObject[currObject].visible = false;
-                        }
+
+                            anchor.context.sceneObject.visible = false;
                     }
                 });
 
@@ -699,10 +691,8 @@ class App {
             else {
                 all_previous_anchors.forEach(anchor =>
                 {
-                    for (let currObject = 0; currObject < anchor.context.sceneObject.length;++currObject)
-                    {
-                        this.scene.remove(anchor.context.sceneObject[currObject]);
-                    }
+
+                        this.scene.remove(anchor.context.sceneObject);
 
                 });
 
@@ -1080,9 +1070,8 @@ class App {
             reticleHitTestResult.createAnchor().then((anchor) =>
             {
                 anchor.context = {};
-                anchor.context.sceneObject = [];
                 createdSphere.anchor = anchor;
-                anchor.context.sceneObject.push(createdSphere);
+                anchor.context.sceneObject = createdSphere;
                 app.scene.add(createdSphere);
                 WallPoints.push(createdSphere);
 
