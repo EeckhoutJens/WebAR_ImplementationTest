@@ -960,13 +960,34 @@ class App {
                         SecondLocation.y = ConstrainedYPosWalls - WallHeight;
                         let Point2 = this.CreateSphere(SecondLocation);
 
-                        WallPoints.push(Point1);
-                        WallPoints.push(Point2);
+                        //Code adapted from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
+                        let frame = event.frame;
+                        let inputSource = event.inputSource;
+
+                        let anchorPoseP1 = new XRRigidTransform(Point1.position,{x: 0,y: 0,z: 0,w: 1});
+                        let anchorPoseP2 = new XRRigidTransform(Point2.position,{x: 0,y: 0,z: 0,w: 1});
+                        frame.createAnchor(anchorPoseP1,inputSource.targetRaySpace).then((anchor) =>
+                        {
+                            anchor.context = {};
+                            anchor.context.sceneObject = Point1;
+                            Point1.anchor = anchor;
+
+                            WallPoints.push(Point1);
+                        })
+
+                        frame.createAnchor(anchorPoseP2,inputSource.targetRaySpace).then((anchor) =>
+                        {
+                            anchor.context = {};
+                            anchor.context.sceneObject = Point2;
+                            Point2.anchor = anchor;
+
+                            WallPoints.push(Point2);
 
                             if (WallPoints.length >= 4)
                             {
                                 ++NrOfWalls;
                             }
+                        })
                             this.CreatePlanes();
                             this.CreateDoneButton();
                             this.CreateSelectWallframesButton();
@@ -1014,16 +1035,26 @@ class App {
 
 
             //Code adapted from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
-            reticleHitTestResult.createAnchor().then((anchor) =>
+            let frame = event.frame;
+            let inputSource = event.inputSource;
+
+            let anchorPoseP1 = new XRRigidTransform(Point1.position,{x: 0,y: 0,z: 0,w: 1});
+            let anchorPoseP2 = new XRRigidTransform(Point2.position,{x: 0,y: 0,z: 0,w: 1});
+            frame.createAnchor(anchorPoseP1,inputSource.targetRaySpace).then((anchor) =>
             {
                 anchor.context = {};
-                anchor.context.sceneObject = [];
+                anchor.context.sceneObject = Point1;
                 Point1.anchor = anchor;
+
+                WallPoints.push(Point1);
+            })
+
+            frame.createAnchor(anchorPoseP2,inputSource.targetRaySpace).then((anchor) =>
+            {
+                anchor.context = {};
+                anchor.context.sceneObject = Point2;
                 Point2.anchor = anchor;
 
-                anchor.context.sceneObject.push(Point1);
-                anchor.context.sceneObject.push(Point2);
-                WallPoints.push(Point1);
                 WallPoints.push(Point2);
 
                 if (WallPoints.length >= 4)
