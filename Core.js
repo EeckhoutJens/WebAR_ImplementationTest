@@ -682,7 +682,7 @@ class App {
                     {
                         for (let currObject = 0; currObject < anchor.context.sceneObject.length;++currObject)
                         {
-                            anchor.context.sceneObject[currObject].matrix.set(anchorPose.transform.matrix);
+                            anchor.context.sceneObject[currObject].matrix.fromArray(anchorPose.transform.matrix);
                         }
                     }
                     else
@@ -1046,22 +1046,33 @@ class App {
         {
             let createdSphere = this.CreateSphere(this.reticle.position);
 
-                    WallPoints.push(createdSphere);
+            reticleHitTestResult.createAnchor().then((anchor) =>
+            {
+                let parentObject = new THREE.Object3D();
+                parentObject.matrixAutoUpdate = false;
+                parentObject.add(createdSphere);
+                anchor.context = {};
+                anchor.context.sceneObject = [];
+                parentObject.anchor = anchor;
+                anchor.context.sceneObject.push(parentObject);
+                app.scene.add(parentObject);
+                WallPoints.push(createdSphere);
 
-                    if (WallPoints.length === 2)
-                    {
-                        ConstrainedYPosWalls = WallPoints[1].position.y;
+                /**if (WallPoints.length === 2)
+                {
+                    ConstrainedYPosWalls = WallPoints[1].position.y;
 
-                        //DELETE - Just added it now for testing purposes
-                        //ConstrainedYPosWalls = 2;
+                    //DELETE - Just added it now for testing purposes
+                    //ConstrainedYPosWalls = 2;
 
-                        WallHeight = ConstrainedYPosWalls - WallPoints[0].position.y;
-                        this.ResetWallPoints();
-                        IsDeterminingHeightWalls = false;
-                        PlacingPointsWalls = true;
-                        document.getElementById("HeightIcon").style.display = "none";
-                        document.getElementById("WallsIcon").style.display = "block";
-                    }
+                    WallHeight = ConstrainedYPosWalls - WallPoints[0].position.y;
+                    this.ResetWallPoints();
+                    IsDeterminingHeightWalls = false;
+                    PlacingPointsWalls = true;
+                    document.getElementById("HeightIcon").style.display = "none";
+                    document.getElementById("WallsIcon").style.display = "block";
+                }*/
+            })
         }
     }
 
@@ -1281,8 +1292,8 @@ class App {
         const sphereMaterial = new THREE.MeshBasicMaterial({color: 0xfff00});
         const sphere = new THREE.Mesh(sphereGeometry,sphereMaterial);
 
-        sphere.position.copy(position);
-        this.scene.add(sphere)
+        //sphere.position.copy(position);
+        //this.scene.add(sphere)
         return sphere;
     }
 
