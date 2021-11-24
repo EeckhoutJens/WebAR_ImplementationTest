@@ -7,7 +7,7 @@ class Reticle extends THREE.Object3D {
         super();
 
         this.loader = new THREE.GLTFLoader();
-        this.loader.load('3D/AxisHelper.gltf', (gltf) => {
+        this.loader.load("https://immersive-web.github.io/webxr-samples/media/gltf/reticle/reticle.gltf", (gltf) => {
             this.add(gltf.scene);
         })
 
@@ -781,7 +781,7 @@ class App {
         shadowMesh.position.y = 10000;
 
         this.scene = scene;
-        this.reticle = new Reticle();
+        this.reticle = this.CreateSphere();
         this.scene.add(this.reticle);
         this.scene.add(shadowMesh);
 
@@ -1308,9 +1308,11 @@ class App {
         const sphereGeometry = new THREE.SphereGeometry(0.05,32,16);
         const sphereMaterial = new THREE.MeshBasicMaterial({color: 0xfff00});
         const sphere = new THREE.Mesh(sphereGeometry,sphereMaterial);
-
-        sphere.position.copy(position);
-        sphere.matrixAutoUpdate = false;
+        if (position)
+        {
+            sphere.position.copy(position);
+            sphere.matrixAutoUpdate = false;
+        }
         this.scene.add(sphere)
         return sphere;
     }
