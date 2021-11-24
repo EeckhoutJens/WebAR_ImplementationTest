@@ -1106,25 +1106,53 @@ class App {
         {
             createdSphere = this.CreateSphere(TopPoint);
         }
-                WallframePoints.push(createdSphere);
 
-                if (WallframePoints.length === 2)
-                {
-                    //Generate top left
-                    //WallframePoints[1].position.y = 2;
-                    let topLeftPosition = WallframePoints[0].position.clone();
-                    topLeftPosition.y = WallframePoints[1].position.y;
-                    let topLeftSphere = this.CreateSphere(topLeftPosition);
-                    WallframePoints.push(topLeftSphere);
+        let frame = event.frame;
 
-                    //Generate bottom right
-                    let bottomRightPosition = WallframePoints[1].position.clone();
-                    bottomRightPosition.y = WallframePoints[0].position.y;
-                    let bottomRightSphere = this.CreateSphere(bottomRightPosition);
-                    WallframePoints.push(bottomRightSphere);
+        let anchorPose = new XRRigidTransform(createdSphere.position,{x: 0,y: 0,z: 0,w: 1});
 
-                    this.DrawWallframes();
-                }
+        frame.createAnchor(anchorPose,this.localReferenceSpace).then((anchor) =>
+        {
+            anchor.context = {};
+            anchor.context.sceneObject = createdSphere;
+            createdSphere.anchor = anchor;
+        })
+
+        WallframePoints.push(createdSphere);
+
+        if (WallframePoints.length === 2)
+        {
+            //Generate top left
+            //WallframePoints[1].position.y = 2;
+            let topLeftPosition = WallframePoints[0].position.clone();
+            topLeftPosition.y = WallframePoints[1].position.y;
+            let topLeftSphere = this.CreateSphere(topLeftPosition);
+            WallframePoints.push(topLeftSphere);
+
+            let anchorPoseTL = new XRRigidTransform(topLeftPosition,{x: 0,y: 0,z: 0,w: 1})
+            frame.createAnchor(anchorPoseTL,this.localReferenceSpace).then((anchor) =>
+            {
+                anchor.context = {};
+                anchor.context.sceneObject = topLeftSphere;
+                topLeftSphere.anchor = anchor;
+            })
+
+            //Generate bottom right
+            let bottomRightPosition = WallframePoints[1].position.clone();
+            bottomRightPosition.y = WallframePoints[0].position.y;
+            let bottomRightSphere = this.CreateSphere(bottomRightPosition);
+            WallframePoints.push(bottomRightSphere);
+
+            let anchorPoseBR = new XRRigidTransform(bottomRightPosition,{x: 0,y: 0,z: 0,w: 1})
+            frame.createAnchor(anchorPoseBR,this.localReferenceSpace).then((anchor) =>
+            {
+                anchor.context = {};
+                anchor.context.sceneObject = bottomRightSphere;
+                bottomRightSphere.anchor = anchor;
+            })
+
+            this.DrawWallframes();
+        }
     }
 
     HandleDoorSelection()
@@ -1140,22 +1168,50 @@ class App {
         {
             createdSphere = this.CreateSphere(TopPoint);
         }
+
+        let frame = event.frame;
+
+        let anchorPose = new XRRigidTransform(createdSphere.position,{x: 0,y: 0,z: 0,w: 1});
+
+        frame.createAnchor(anchorPose,this.localReferenceSpace).then((anchor) =>
+        {
+            anchor.context = {};
+            anchor.context.sceneObject = createdSphere;
+            createdSphere.anchor = anchor;
+        })
+
         DoorPoints.push(createdSphere);
 
         if (DoorPoints.length === 2)
         {
             //Generate top left
-            //DoorPoints[1].position.y = 2;
-            let topLeftPosition = DoorPoints[0].position.clone();
-            topLeftPosition.y = DoorPoints[1].position.y;
+            //WallframePoints[1].position.y = 2;
+            let topLeftPosition = WallframePoints[0].position.clone();
+            topLeftPosition.y = WallframePoints[1].position.y;
             let topLeftSphere = this.CreateSphere(topLeftPosition);
             DoorPoints.push(topLeftSphere);
 
+            let anchorPoseTL = new XRRigidTransform(topLeftPosition,{x: 0,y: 0,z: 0,w: 1})
+            frame.createAnchor(anchorPoseTL,this.localReferenceSpace).then((anchor) =>
+            {
+                anchor.context = {};
+                anchor.context.sceneObject = topLeftSphere;
+                topLeftSphere.anchor = anchor;
+            })
+
             //Generate bottom right
-            let bottomRightPosition = DoorPoints[1].position.clone();
-            bottomRightPosition.y = DoorPoints[0].position.y;
+            let bottomRightPosition = WallframePoints[1].position.clone();
+            bottomRightPosition.y = WallframePoints[0].position.y;
             let bottomRightSphere = this.CreateSphere(bottomRightPosition);
             DoorPoints.push(bottomRightSphere);
+
+            let anchorPoseBR = new XRRigidTransform(bottomRightPosition,{x: 0,y: 0,z: 0,w: 1})
+            frame.createAnchor(anchorPoseBR,this.localReferenceSpace).then((anchor) =>
+            {
+                anchor.context = {};
+                anchor.context.sceneObject = bottomRightSphere;
+                bottomRightSphere.anchor = anchor;
+            })
 
             this.DrawDoors();
         }
