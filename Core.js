@@ -1048,14 +1048,11 @@ class App {
 
             reticleHitTestResult.createAnchor().then((anchor) =>
             {
-                let parentObject = new THREE.Object3D();
-                parentObject.matrixAutoUpdate = false;
-                parentObject.add(createdSphere);
                 anchor.context = {};
                 anchor.context.sceneObject = [];
-                parentObject.anchor = anchor;
-                anchor.context.sceneObject.push(parentObject);
-                app.scene.add(parentObject);
+                createdSphere.anchor = anchor;
+                anchor.context.sceneObject.push(createdSphere);
+                app.scene.add(createdSphere);
                 WallPoints.push(createdSphere);
 
                 if (WallPoints.length === 2)
@@ -1292,8 +1289,9 @@ class App {
         const sphereMaterial = new THREE.MeshBasicMaterial({color: 0xfff00});
         const sphere = new THREE.Mesh(sphereGeometry,sphereMaterial);
 
-        //sphere.position.copy(position);
-        //this.scene.add(sphere)
+        sphere.position.copy(position);
+        sphere.matrixAutoUpdate = false;
+        this.scene.add(sphere)
         return sphere;
     }
 
