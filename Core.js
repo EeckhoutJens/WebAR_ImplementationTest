@@ -1058,7 +1058,7 @@ class App {
                 app.scene.add(parentObject);
                 WallPoints.push(createdSphere);
 
-                /**if (WallPoints.length === 2)
+                if (WallPoints.length === 2)
                 {
                     ConstrainedYPosWalls = WallPoints[1].position.y;
 
@@ -1071,7 +1071,7 @@ class App {
                     PlacingPointsWalls = true;
                     document.getElementById("HeightIcon").style.display = "none";
                     document.getElementById("WallsIcon").style.display = "block";
-                }*/
+                }
             })
         }
     }
