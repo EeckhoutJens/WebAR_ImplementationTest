@@ -585,7 +585,7 @@ class App {
                 InitialPos.copy(this.reticle.position);
 
                 //CODE TO TEST ON FLAT PLAINS - REMOVE FOR PROPER TESTING
-                //InitialPos.y = 2;
+                InitialPos.y = 2;
 
                 LTPoint.copy(WallframePoints[0].position);
                 LTPoint.y = InitialPos.y;
@@ -628,7 +628,7 @@ class App {
                 InitialPos.copy(this.reticle.position);
 
                 //CODE TO TEST ON FLAT PLAINS - REMOVE FOR PROPER TESTING
-                //InitialPos.y = 2;
+                InitialPos.y = 2;
 
                 LTPoint.copy(DoorPoints[0].position);
                 LTPoint.y = InitialPos.y;
@@ -943,7 +943,7 @@ class App {
         {
                 if (WallPoints.length !== 0)
                 {
-                    let distanceToMarker = WallPoints[WallPoints.length - 2].position.distanceToSquared(this.reticle.position);
+                    let distanceToMarker = WallPoints[WallPoints.length - 1].position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         FinishedPlacingWalls = true;
@@ -957,7 +957,7 @@ class App {
                         document.getElementById("WallsIcon").style.display = "none";
                     }
 
-                    distanceToMarker = WallPoints[0].position.distanceToSquared(this.reticle.position);
+                    distanceToMarker = WallPoints[1].position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < MinDistance)
                     {
                         let Point1;
@@ -1100,7 +1100,7 @@ class App {
                     ConstrainedYPosWalls = WallPoints[1].position.y;
 
                     //DELETE - Just added it now for testing purposes
-                    //ConstrainedYPosWalls = 2;
+                    ConstrainedYPosWalls = 2;
 
                     WallHeight = ConstrainedYPosWalls - WallPoints[0].position.y;
                     this.ResetWallPoints();
@@ -1143,7 +1143,7 @@ class App {
         if (WallframePoints.length === 2)
         {
             //Generate top left
-            //WallframePoints[1].position.y = 2;
+            WallframePoints[1].position.y = 2;
             let topLeftPosition = WallframePoints[0].position.clone();
             topLeftPosition.y = WallframePoints[1].position.y;
             let topLeftSphere = this.CreateSphere(topLeftPosition);
@@ -1205,7 +1205,7 @@ class App {
         if (DoorPoints.length === 2)
         {
             //Generate top left
-            //WallframePoints[1].position.y = 2;
+            DoorPoints[1].position.y = 2;
             let topLeftPosition = DoorPoints[0].position.clone();
             topLeftPosition.y = DoorPoints[1].position.y;
             let topLeftSphere = this.CreateSphere(topLeftPosition);
@@ -1589,6 +1589,7 @@ class App {
 
                     case DecorationTypes.Doortrim:
                         app.GenerateDoorTrims(ModelID);
+                        break;
                 }
             });
     }
