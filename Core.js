@@ -3161,7 +3161,7 @@ class App {
     SelectDoorsClicked()
     {
         PlacingPointsDoors = true;
-        PlacingPointsWalls = false;
+        PlacingPointsWallframes = false;
         DoorsButton.style.display = 'none';
     }
 }
