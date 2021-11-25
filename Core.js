@@ -882,6 +882,26 @@ class App {
             {
                 WallLines[currentLine].visible = isActive;
             }
+
+        for (let currentPoint = 0; currentPoint < WallframePoints.length; ++currentPoint)
+        {
+            WallframePoints[currentPoint].visible = isActive;
+        }
+
+        for (let currentLine = 0; currentLine < WallframeLines.length; ++currentLine)
+        {
+            WallframeLines[currentLine].visible = isActive;
+        }
+
+        for (let currentPoint = 0; currentPoint < DoorPoints.length; ++currentPoint)
+        {
+            DoorPoints[currentPoint].visible = isActive;
+        }
+
+        for (let currentLine = 0; currentLine < DoorLines.length; ++currentLine)
+        {
+            DoorLines[currentLine].visible = isActive;
+        }
     }
 
     UpdatePlaneFill()
@@ -2196,6 +2216,7 @@ class App {
 
     GenerateWallframeTrims(ID)
     {
+        this.ResetWallFrames();
         window.gltfLoader.load(ID + ".gltf", function (gltf) {
             let loadedScene = gltf.scene;
             let defaultTrim;
@@ -2211,6 +2232,7 @@ class App {
 
     GenerateDoorTrims(ID)
     {
+        this.ResetDoorTrims();
         window.gltfLoader.load(ID + ".gltf", function (gltf) {
             let loadedScene = gltf.scene;
             let defaultTrim;
