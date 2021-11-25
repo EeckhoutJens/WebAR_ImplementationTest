@@ -1206,8 +1206,8 @@ class App {
         {
             //Generate top left
             //WallframePoints[1].position.y = 2;
-            let topLeftPosition = WallframePoints[0].position.clone();
-            topLeftPosition.y = WallframePoints[1].position.y;
+            let topLeftPosition = DoorPoints[0].position.clone();
+            topLeftPosition.y = DoorPoints[1].position.y;
             let topLeftSphere = this.CreateSphere(topLeftPosition);
             DoorPoints.push(topLeftSphere);
 
@@ -1220,8 +1220,8 @@ class App {
             })
 
             //Generate bottom right
-            let bottomRightPosition = WallframePoints[1].position.clone();
-            bottomRightPosition.y = WallframePoints[0].position.y;
+            let bottomRightPosition = DoorPoints[1].position.clone();
+            bottomRightPosition.y = DoorPoints[0].position.y;
             let bottomRightSphere = this.CreateSphere(bottomRightPosition);
             DoorPoints.push(bottomRightSphere);
 
