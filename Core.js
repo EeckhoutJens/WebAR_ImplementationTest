@@ -3016,7 +3016,7 @@ class App {
                 for (let currDeco = 0; currDeco < SpawnedDecorations.length; ++currDeco)
                 {
                     let distanceToMarker = SpawnedDecorations[currDeco].position.distanceToSquared(this.reticle.position);
-                    if (distanceToMarker < 0.5)
+                    if (distanceToMarker < 0.15)
                     {
                         DecoToMove = SpawnedDecorations[currDeco];
                         IsMovingDeco = true;
