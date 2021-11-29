@@ -479,228 +479,254 @@ class App {
             if (hitTestResults.length > 0) {
                 let hitPose = hitTestResults[0].getPose(this.localReferenceSpace);
 
-                /** Update the reticle transform. */
+                /** Update the reticle position. */
                 reticleHitTestResult = hitTestResults[0];
                 this.reticle.visible = true;
                 this.reticle.position.set(hitPose.transform.position.x, hitPose.transform.position.y, hitPose.transform.position.z);
                 this.reticle.updateMatrixWorld(true);
 
-                if (FinishedPlacingWalls)
-                {
-                    for (let currPlane = 0; currPlane < WallPlanePoints.length; ++currPlane)
-                    {
-                        if (this.IsInSpecificPlane(this.reticle.position,WallPlanePoints[currPlane]))
-                        {
-                            let currentPoints = WallPlanePoints[currPlane];
-                            let direction = this.CalculatePlaneDirection(currentPoints[0],currentPoints[3]);
-                            if (IsDirectionX)
-                            {
-                                if (direction.x < 0)
-                                    this.reticle.rotation.y = Math.PI;
-                                else
-                                    this.reticle.rotation.y = 0;
-                            }
-                            else
-                            {
-                                if (direction.z < 0)
-                                    this.reticle.rotation.y = Math.PI / 2;
-                                else
-                                    this.reticle.rotation.y = -Math.PI / 2;
-                            }
-                            break;
-                        }
-                    }
-
-
-                    if (IsMovingDeco)
-                    {
-                        if (DecoToMove)
-                        {
-                            DecoToMove.position.set(this.reticle.position.x,this.reticle.position.y,this.reticle.position.z);
-                            DecoToMove.rotation.y = this.reticle.rotation.y;
-                        }
-                    }
-                }
+                this.UpdateReticleOrientation();
             }
 
-            //Draw preview lines while placing points to define walls
-            if (PlacingPointsWalls && WallPoints.length !== 0)
-            {
-                this.scene.remove(previewLine);
-                let PreviewPoints = [];
-                let InitialPos = new THREE.Vector3(0,0,0);
-                InitialPos.copy(this.reticle.position);
-                InitialPos.y = ConstrainedYPosWalls;
-                PreviewPoints.push(InitialPos);
-                TopPoint = InitialPos;
+            this.DrawPreviewlineWall();
 
-                let adjustedPos = new THREE.Vector3(0,0,0);
-                adjustedPos.copy(this.reticle.position);
-                adjustedPos.y = ConstrainedYPosWalls - WallHeight;
-                PreviewPoints.push(adjustedPos);
-                BottomPoint = adjustedPos;
+            this.DrawPreviewlineFrame();
 
-                let copiedPos1 = new THREE.Vector3(0,0,0);
-                let copiedPos2 = new THREE.Vector3(0,0,0);
-                let arrLength = WallPoints.length;
+            this.DrawPreviewlineDoor();
 
-                copiedPos1.copy(WallPoints[arrLength - 1].position);
-                copiedPos2.copy(WallPoints[arrLength - 2].position);
-
-                let direction = new THREE.Vector3(0,0,0);
-                direction.copy(BottomPoint);
-                direction.sub(copiedPos1);
-                let isDirectionX = Math.abs(direction.x) > Math.abs(direction.z);
-
-                if (isDirectionX)
-                {
-                    TopPoint.z = copiedPos1.z;
-                    BottomPoint.z = copiedPos1.z;
-                }
-                else
-                {
-                    TopPoint.x = copiedPos1.x;
-                    BottomPoint.x = copiedPos1.x;
-                }
-
-                PreviewPoints.push(copiedPos1);
-                PreviewPoints.push(copiedPos2);
-                PreviewPoints.push(InitialPos);
-
-                const material = new THREE.LineBasicMaterial({color: 0x0000ff});
-                const geometry = new THREE.BufferGeometry().setFromPoints(PreviewPoints);
-                const line = new THREE.Line(geometry,material);
-                this.scene.add(line);
-                previewLine = line;
-            }
-
-            //Draw preview lines while placing points to define WallFrames
-            if (PlacingPointsWallframes && WallframePoints.length !== 0)
-            {
-               this.scene.remove(previewLine);
-               let previewPoints = [];
-                let InitialPos = new THREE.Vector3(0,0,0);
-                let LTPoint = new THREE.Vector3(0,0,0);
-                let BRPoint = new THREE.Vector3(0,0,0);
-                InitialPos.copy(this.reticle.position);
-
-                //CODE TO TEST ON FLAT PLAINS - REMOVE FOR PROPER TESTING
-                //InitialPos.y = 0.5;
-
-                LTPoint.copy(WallframePoints[0].position);
-                LTPoint.y = InitialPos.y;
-
-                this.CalculatePlaneDirection(WallframePoints[0].position,InitialPos);
-                if (IsDirectionX)
-                {
-                    InitialPos.z = WallframePoints[0].position.z;
-                }
-                else
-                {
-                    InitialPos.x = WallframePoints[0].position.x;
-                }
-
-                BRPoint.copy(InitialPos);
-                BRPoint.y = WallframePoints[0].position.y;
-
-                TopPoint = InitialPos;
-
-                previewPoints.push(BRPoint);
-                previewPoints.push(InitialPos);
-                previewPoints.push(LTPoint);
-                previewPoints.push(WallframePoints[0].position);
-
-                const material = new THREE.LineBasicMaterial({color: 0xff0000});
-                const geometry = new THREE.BufferGeometry().setFromPoints(previewPoints);
-                const line = new THREE.Line(geometry,material);
-                this.scene.add(line);
-                previewLine = line;
-            }
-
-            //Draw preview lines while placing points to define WallFrames
-            if (PlacingPointsDoors && DoorPoints.length !== 0)
-            {
-                this.scene.remove(previewLine);
-                let previewPoints = [];
-                let InitialPos = new THREE.Vector3(0,0,0);
-                let LTPoint = new THREE.Vector3(0,0,0);
-                let BRPoint = new THREE.Vector3(0,0,0);
-                InitialPos.copy(this.reticle.position);
-
-                //CODE TO TEST ON FLAT PLAINS - REMOVE FOR PROPER TESTING
-                //InitialPos.y = 0.5;
-
-                LTPoint.copy(DoorPoints[0].position);
-                LTPoint.y = InitialPos.y;
-
-                this.CalculatePlaneDirection(DoorPoints[0].position,InitialPos);
-                if (IsDirectionX)
-                {
-                    InitialPos.z = DoorPoints[0].position.z;
-                }
-                else
-                {
-                    InitialPos.x = DoorPoints[0].position.x;
-                }
-
-                BRPoint.copy(InitialPos);
-                BRPoint.y = DoorPoints[0].position.y;
-
-                TopPoint = InitialPos;
-
-                previewPoints.push(BRPoint);
-                previewPoints.push(InitialPos);
-                previewPoints.push(LTPoint);
-                previewPoints.push(DoorPoints[0].position);
-
-                const material = new THREE.LineBasicMaterial({color: 0x00ff00});
-                const geometry = new THREE.BufferGeometry().setFromPoints(previewPoints);
-                const line = new THREE.Line(geometry,material);
-                this.scene.add(line);
-                previewLine = line;
-            }
-
-
-            // only update the object's position if it's still in the list
-            // of frame.trackedAnchors
-            // Update the position of all the anchored objects based on the currently reported positions of their anchors
-            const tracked_anchors = frame.trackedAnchors;
-            if(tracked_anchors){
-                all_previous_anchors.forEach(anchor => {
-                    if(!tracked_anchors.has(anchor))
-                    {
-                            this.scene.remove(anchor.context.sceneObject);
-                    }
-                });
-
-                tracked_anchors.forEach(anchor => {
-                    const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
-                    if (anchorPose)
-                    {
-                            anchor.context.sceneObject.matrix.fromArray(anchorPose.transform.matrix);
-                    }
-                    else
-                    {
-
-                            anchor.context.sceneObject.visible = false;
-                    }
-                });
-
-                all_previous_anchors = tracked_anchors;
-            }
-            else {
-                all_previous_anchors.forEach(anchor =>
-                {
-
-                        this.scene.remove(anchor.context.sceneObject);
-
-                });
-
-                all_previous_anchors = new Set();
-            }
+            this.UpdateAnchors(frame);
 
             /** Render the scene with THREE.WebGLRenderer. */
             this.renderer.render(this.scene, this.camera)
+        }
+    }
+
+    UpdateReticleOrientation()
+    {
+        //Align reticle with wall
+        if (FinishedPlacingWalls)
+        {
+            for (let currPlane = 0; currPlane < WallPlanePoints.length; ++currPlane)
+            {
+                if (this.IsInSpecificPlane(this.reticle.position,WallPlanePoints[currPlane]))
+                {
+                    let currentPoints = WallPlanePoints[currPlane];
+                    let direction = this.CalculatePlaneDirection(currentPoints[0],currentPoints[3]);
+                    if (IsDirectionX)
+                    {
+                        if (direction.x < 0)
+                            this.reticle.rotation.y = Math.PI;
+                        else
+                            this.reticle.rotation.y = 0;
+                    }
+                    else
+                    {
+                        if (direction.z < 0)
+                            this.reticle.rotation.y = Math.PI / 2;
+                        else
+                            this.reticle.rotation.y = -Math.PI / 2;
+                    }
+                    break;
+                }
+            }
+
+
+            //If user has a decoration selected, update it based on reticle
+            if (IsMovingDeco)
+            {
+                if (DecoToMove)
+                {
+                    DecoToMove.position.set(this.reticle.position.x,this.reticle.position.y,this.reticle.position.z);
+                    DecoToMove.rotation.y = this.reticle.rotation.y;
+                }
+            }
+        }
+    }
+
+    UpdateAnchors(frame)
+    {
+        // only update the object's position if it's still in the list
+        // of frame.trackedAnchors
+        // Update the position of all the anchored objects based on the currently reported positions of their anchors
+        const tracked_anchors = frame.trackedAnchors;
+        if(tracked_anchors){
+            all_previous_anchors.forEach(anchor => {
+                if(!tracked_anchors.has(anchor))
+                {
+                    this.scene.remove(anchor.context.sceneObject);
+                }
+            });
+
+            tracked_anchors.forEach(anchor => {
+                const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
+                if (anchorPose)
+                {
+                    anchor.context.sceneObject.matrix.fromArray(anchorPose.transform.matrix);
+                }
+                else
+                {
+
+                    anchor.context.sceneObject.visible = false;
+                }
+            });
+
+            all_previous_anchors = tracked_anchors;
+        }
+        else {
+            all_previous_anchors.forEach(anchor =>
+            {
+
+                this.scene.remove(anchor.context.sceneObject);
+
+            });
+
+            all_previous_anchors = new Set();
+        }
+    }
+
+    DrawPreviewlineWall()
+    {
+        //Draw preview lines while placing points to define walls
+        if (PlacingPointsWalls && WallPoints.length !== 0)
+        {
+            this.scene.remove(previewLine);
+            let PreviewPoints = [];
+            let InitialPos = new THREE.Vector3(0,0,0);
+            InitialPos.copy(this.reticle.position);
+            InitialPos.y = ConstrainedYPosWalls;
+            PreviewPoints.push(InitialPos);
+            TopPoint = InitialPos;
+
+            let adjustedPos = new THREE.Vector3(0,0,0);
+            adjustedPos.copy(this.reticle.position);
+            adjustedPos.y = ConstrainedYPosWalls - WallHeight;
+            PreviewPoints.push(adjustedPos);
+            BottomPoint = adjustedPos;
+
+            let copiedPos1 = new THREE.Vector3(0,0,0);
+            let copiedPos2 = new THREE.Vector3(0,0,0);
+            let arrLength = WallPoints.length;
+
+            copiedPos1.copy(WallPoints[arrLength - 1].position);
+            copiedPos2.copy(WallPoints[arrLength - 2].position);
+
+            let direction = new THREE.Vector3(0,0,0);
+            direction.copy(BottomPoint);
+            direction.sub(copiedPos1);
+            let isDirectionX = Math.abs(direction.x) > Math.abs(direction.z);
+
+            if (isDirectionX)
+            {
+                TopPoint.z = copiedPos1.z;
+                BottomPoint.z = copiedPos1.z;
+            }
+            else
+            {
+                TopPoint.x = copiedPos1.x;
+                BottomPoint.x = copiedPos1.x;
+            }
+
+            PreviewPoints.push(copiedPos1);
+            PreviewPoints.push(copiedPos2);
+            PreviewPoints.push(InitialPos);
+
+            const material = new THREE.LineBasicMaterial({color: 0x0000ff});
+            const geometry = new THREE.BufferGeometry().setFromPoints(PreviewPoints);
+            const line = new THREE.Line(geometry,material);
+            this.scene.add(line);
+            previewLine = line;
+        }
+    }
+
+    DrawPreviewlineFrame()
+    {
+        //Draw preview lines while placing points to define WallFrames
+        if (PlacingPointsWallframes && WallframePoints.length !== 0)
+        {
+            this.scene.remove(previewLine);
+            let previewPoints = [];
+            let InitialPos = new THREE.Vector3(0,0,0);
+            let LTPoint = new THREE.Vector3(0,0,0);
+            let BRPoint = new THREE.Vector3(0,0,0);
+            InitialPos.copy(this.reticle.position);
+
+            //CODE TO TEST ON FLAT PLAINS - REMOVE FOR PROPER TESTING
+            InitialPos.y = 0.5;
+
+            LTPoint.copy(WallframePoints[0].position);
+            LTPoint.y = InitialPos.y;
+
+            this.CalculatePlaneDirection(WallframePoints[0].position,InitialPos);
+            if (IsDirectionX)
+            {
+                InitialPos.z = WallframePoints[0].position.z;
+            }
+            else
+            {
+                InitialPos.x = WallframePoints[0].position.x;
+            }
+
+            BRPoint.copy(InitialPos);
+            BRPoint.y = WallframePoints[0].position.y;
+
+            TopPoint = InitialPos;
+
+            previewPoints.push(BRPoint);
+            previewPoints.push(InitialPos);
+            previewPoints.push(LTPoint);
+            previewPoints.push(WallframePoints[0].position);
+
+            const material = new THREE.LineBasicMaterial({color: 0xff0000});
+            const geometry = new THREE.BufferGeometry().setFromPoints(previewPoints);
+            const line = new THREE.Line(geometry,material);
+            this.scene.add(line);
+            previewLine = line;
+        }
+    }
+
+    DrawPreviewlineDoor()
+    {
+        //Draw preview lines while placing points to define WallFrames
+        if (PlacingPointsDoors && DoorPoints.length !== 0)
+        {
+            this.scene.remove(previewLine);
+            let previewPoints = [];
+            let InitialPos = new THREE.Vector3(0,0,0);
+            let LTPoint = new THREE.Vector3(0,0,0);
+            let BRPoint = new THREE.Vector3(0,0,0);
+            InitialPos.copy(this.reticle.position);
+
+            //CODE TO TEST ON FLAT PLAINS - REMOVE FOR PROPER TESTING
+            InitialPos.y = 0.5;
+
+            LTPoint.copy(DoorPoints[0].position);
+            LTPoint.y = InitialPos.y;
+
+            this.CalculatePlaneDirection(DoorPoints[0].position,InitialPos);
+            if (IsDirectionX)
+            {
+                InitialPos.z = DoorPoints[0].position.z;
+            }
+            else
+            {
+                InitialPos.x = DoorPoints[0].position.x;
+            }
+
+            BRPoint.copy(InitialPos);
+            BRPoint.y = DoorPoints[0].position.y;
+
+            TopPoint = InitialPos;
+
+            previewPoints.push(BRPoint);
+            previewPoints.push(InitialPos);
+            previewPoints.push(LTPoint);
+            previewPoints.push(DoorPoints[0].position);
+
+            const material = new THREE.LineBasicMaterial({color: 0x00ff00});
+            const geometry = new THREE.BufferGeometry().setFromPoints(previewPoints);
+            const line = new THREE.Line(geometry,material);
+            this.scene.add(line);
+            previewLine = line;
         }
     }
 
@@ -708,6 +734,7 @@ class App {
      * Initialize three.js specific rendering code, including a WebGLRenderer,
      * a demo scene, and a camera for viewing the 3D content.
      */
+
     setupThreeJs() {
         /** To help with working with 3D on the web, we'll use three.js.
          * Set up the WebGLRenderer, which handles rendering to our session's base layer. */
@@ -730,14 +757,14 @@ class App {
         /** Initialize our demo scene. */
         const scene = new THREE.Scene();
 
-        // The materials will render as a black mesh
-        // without lights in our scenes. Let's add an ambient light
-        // so our material can be visible, as well as a directional light
-        // for the shadow.
+        //Create default lights that we can fall back on if light estimation does not work
+        //or  is not supported
         const light = new THREE.AmbientLight(0x222222);
         const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
         directionalLight.castShadow = true;
         directionalLight.position.set(0, 1, 0.75).normalize();
+
+        //Create xrLight to enable light estimation
         const xrLight = new XREstimatedLight(this.renderer);
         xrLight.castShadow = true;
 
@@ -997,8 +1024,9 @@ class App {
                             {
                                 ++NrOfWalls;
                             }
-                        })
+
                             this.CreatePlanes();
+                        })
                             this.CreateDoneButton();
                             this.CreateSelectWallframesButton();
                             this.CreateSelectDoorsButton();
@@ -1100,7 +1128,7 @@ class App {
                     ConstrainedYPosWalls = WallPoints[1].position.y;
 
                     //DELETE - Just added it now for testing purposes
-                    //ConstrainedYPosWalls = 1.75;
+                    ConstrainedYPosWalls = 1.75;
 
                     WallHeight = ConstrainedYPosWalls - WallPoints[0].position.y;
                     this.ResetWallPoints();
@@ -1113,73 +1141,11 @@ class App {
         }
     }
 
-    HandleWallframeSelection(event)
+    HandleFrameSelection(event, container)
     {
         //Select bottom left - top right
         let createdSphere;
-        if (WallframePoints.length === 0)
-        {
-             createdSphere = this.CreateSphere(this.reticle.position);
-        }
-
-        else
-        {
-            createdSphere = this.CreateSphere(TopPoint);
-        }
-
-        let frame = event.frame;
-
-        let anchorPose = new XRRigidTransform(createdSphere.position,{x: 0,y: 0,z: 0,w: 1});
-
-        frame.createAnchor(anchorPose,this.localReferenceSpace).then((anchor) =>
-        {
-            anchor.context = {};
-            anchor.context.sceneObject = createdSphere;
-            createdSphere.anchor = anchor;
-        })
-
-        WallframePoints.push(createdSphere);
-
-        if (WallframePoints.length === 2)
-        {
-            //Generate top left
-            //WallframePoints[1].position.y = 0.5;
-            let topLeftPosition = WallframePoints[0].position.clone();
-            topLeftPosition.y = WallframePoints[1].position.y;
-            let topLeftSphere = this.CreateSphere(topLeftPosition);
-            WallframePoints.push(topLeftSphere);
-
-            let anchorPoseTL = new XRRigidTransform(topLeftPosition,{x: 0,y: 0,z: 0,w: 1})
-            frame.createAnchor(anchorPoseTL,this.localReferenceSpace).then((anchor) =>
-            {
-                anchor.context = {};
-                anchor.context.sceneObject = topLeftSphere;
-                topLeftSphere.anchor = anchor;
-            })
-
-            //Generate bottom right
-            let bottomRightPosition = WallframePoints[1].position.clone();
-            bottomRightPosition.y = WallframePoints[0].position.y;
-            let bottomRightSphere = this.CreateSphere(bottomRightPosition);
-            WallframePoints.push(bottomRightSphere);
-
-            let anchorPoseBR = new XRRigidTransform(bottomRightPosition,{x: 0,y: 0,z: 0,w: 1})
-            frame.createAnchor(anchorPoseBR,this.localReferenceSpace).then((anchor) =>
-            {
-                anchor.context = {};
-                anchor.context.sceneObject = bottomRightSphere;
-                bottomRightSphere.anchor = anchor;
-            })
-
-            this.DrawWallframes();
-        }
-    }
-
-    HandleDoorSelection()
-    {
-        //Select bottom left - top right
-        let createdSphere;
-        if (DoorPoints.length === 0)
+        if (container.length === 0)
         {
             createdSphere = this.CreateSphere(this.reticle.position);
         }
@@ -1200,41 +1166,48 @@ class App {
             createdSphere.anchor = anchor;
         })
 
-        DoorPoints.push(createdSphere);
+        container.push(createdSphere);
 
-        if (DoorPoints.length === 2)
-        {
+        if (container.length === 2) {
             //Generate top left
-            //DoorPoints[1].position.y = 0.5;
-            let topLeftPosition = DoorPoints[0].position.clone();
-            topLeftPosition.y = DoorPoints[1].position.y;
+            container[1].position.y = 0.5;
+            let topLeftPosition = container[0].position.clone();
+            topLeftPosition.y = container[1].position.y;
             let topLeftSphere = this.CreateSphere(topLeftPosition);
-            DoorPoints.push(topLeftSphere);
+            container.push(topLeftSphere);
 
-            let anchorPoseTL = new XRRigidTransform(topLeftPosition,{x: 0,y: 0,z: 0,w: 1})
-            frame.createAnchor(anchorPoseTL,this.localReferenceSpace).then((anchor) =>
-            {
+            let anchorPoseTL = new XRRigidTransform(topLeftPosition, {x: 0, y: 0, z: 0, w: 1})
+            frame.createAnchor(anchorPoseTL, this.localReferenceSpace).then((anchor) => {
                 anchor.context = {};
                 anchor.context.sceneObject = topLeftSphere;
                 topLeftSphere.anchor = anchor;
             })
 
             //Generate bottom right
-            let bottomRightPosition = DoorPoints[1].position.clone();
-            bottomRightPosition.y = DoorPoints[0].position.y;
+            let bottomRightPosition = container[1].position.clone();
+            bottomRightPosition.y = container[0].position.y;
             let bottomRightSphere = this.CreateSphere(bottomRightPosition);
-            DoorPoints.push(bottomRightSphere);
+            container.push(bottomRightSphere);
 
-            let anchorPoseBR = new XRRigidTransform(bottomRightPosition,{x: 0,y: 0,z: 0,w: 1})
-            frame.createAnchor(anchorPoseBR,this.localReferenceSpace).then((anchor) =>
-            {
+            let anchorPoseBR = new XRRigidTransform(bottomRightPosition, {x: 0, y: 0, z: 0, w: 1})
+            frame.createAnchor(anchorPoseBR, this.localReferenceSpace).then((anchor) => {
                 anchor.context = {};
                 anchor.context.sceneObject = bottomRightSphere;
                 bottomRightSphere.anchor = anchor;
             })
-
-            this.DrawDoors();
         }
+    }
+
+    HandleWallframeSelection(event)
+    {
+        this.HandleFrameSelection(event,WallframePoints);
+        this.DrawWallframes();
+    }
+
+    HandleDoorSelection(event)
+    {
+        this.HandleFrameSelection(event,DoorPoints);
+        this.DrawDoors();
     }
 
     ResetWallPoints()
@@ -2806,51 +2779,7 @@ class App {
 
         EditButton.onclick = function ()
         {
-            inEditMode = !inEditMode;
-            if (inEditMode)
-            {
-                ModelID = null;
-                PlaceButton.style.display = "none";
-                RestartButton.style.display = "none";
-                document.getElementById("OpenButton").style.display = "none";
-                SelectButton.style.display = "block";
-                RemoveAllButton.style.display = "block";
-                RemoveButton.style.display = "block";
-                EditButton.textContent = 'Add';
-                defaultGui.hide();
-                transformGui.show();
-                if (SpawnedWallTrims.length > 0)
-                {
-                    paramsWallTrimHeight.height = SpawnedWallTrims[0].position.y;
-                }
-                app.scene.remove(app.reticle);
-                app.reticle = new Reticle();
-                app.scene.add(app.reticle);
-            }
-            else
-            {
-                EditButton.textContent = 'Edit';
-                PlaceButton.style.display = "block";
-                RestartButton.style.display = "block";
-                document.getElementById("OpenButton").style.display = "block";
-                SelectButton.style.display = "none";
-                RemoveAllButton.style.display = "none";
-                RemoveButton.style.display = 'none';
-                defaultGui.show();
-                transformGui.hide();
-                if (WidthController)
-                {
-                    transformGui.remove(WidthController);
-                    WidthController = null;
-                }
-                if (DecoToMove)
-                {
-                    DecoToMove = null;
-                    IsMovingDeco = false;
-                }
-                app.UpdateTrimColor();
-            }
-
+            app.EditClicked();
         }
 
         document.body.appendChild(EditButton);
@@ -2931,6 +2860,54 @@ class App {
         element.style.opacity = '0.5';
         element.style.outline = 'none';
         element.style.zIndex = '999';
+    }
+
+    EditClicked()
+    {
+        inEditMode = !inEditMode;
+        if (inEditMode)
+        {
+            ModelID = null;
+            PlaceButton.style.display = "none";
+            RestartButton.style.display = "none";
+            document.getElementById("OpenButton").style.display = "none";
+            SelectButton.style.display = "block";
+            RemoveAllButton.style.display = "block";
+            RemoveButton.style.display = "block";
+            EditButton.textContent = 'Add';
+            defaultGui.hide();
+            transformGui.show();
+            if (SpawnedWallTrims.length > 0)
+            {
+                paramsWallTrimHeight.height = SpawnedWallTrims[0].position.y;
+            }
+            app.scene.remove(app.reticle);
+            app.reticle = new Reticle();
+            app.scene.add(app.reticle);
+        }
+        else
+        {
+            EditButton.textContent = 'Edit';
+            PlaceButton.style.display = "block";
+            RestartButton.style.display = "block";
+            document.getElementById("OpenButton").style.display = "block";
+            SelectButton.style.display = "none";
+            RemoveAllButton.style.display = "none";
+            RemoveButton.style.display = 'none';
+            defaultGui.show();
+            transformGui.hide();
+            if (WidthController)
+            {
+                transformGui.remove(WidthController);
+                WidthController = null;
+            }
+            if (DecoToMove)
+            {
+                DecoToMove = null;
+                IsMovingDeco = false;
+            }
+            app.UpdateTrimColor();
+        }
     }
 
     SelectClicked()
