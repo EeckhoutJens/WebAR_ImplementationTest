@@ -1,4 +1,5 @@
 window.gltfLoader = new THREE.GLTFLoader();
+window.gltfLoader.setPath('3D/');
 window.objectLoader = new THREE.ObjectLoader();
 import {XREstimatedLight} from "./XREstimatedLight.js";
 
@@ -110,7 +111,6 @@ let FinishedPlacingWalls = false;
 //-------------------------------------------------------------------------------------------------
 
 let ModelID;
-let isMovingTrim;
 let inEditMode = false;
 let selectedFrame = false;
 let SpawnedDecorations = [];
@@ -284,7 +284,7 @@ class App {
 
     }
 
-    //Separate clip function for doortrims and frames where it is important that trims get trimmed and connect to each other
+    //Separate clip function for doortrims and frames using diagonal clipplanes
     DoorClip(plane,object,clipNormal,createHelper)
     {
         //Now we transform our plane into a 2D plane so we can actually use it to clip
@@ -951,7 +951,6 @@ class App {
 
     /** Place a point when the screen is tapped.
      * Once 2 or more points have been placed create lines*/
-    //Ensure to change Z to Y when testing vertical planes
     onSelect = (event) =>
     {
         if (!FinishedPlacingWalls)
@@ -1424,79 +1423,40 @@ class App {
 
     DrawWallframes()
     {
+        this.DrawPlanes(WallframePoints,WallframeLines,WallframePlanes,0xff0000);
+        this.ResetWallframePoints();
+    }
+
+    //This function takes 3 containers, points is the only one that needs to filled before calling function
+    //The other 2 will be used to store information created within this function
+    DrawPlanes(points, lines, planes, lineColor)
+    {
         this.scene.remove(previewLine);
         previewLine = null;
         var linePoints = [];
-        linePoints.push(WallframePoints[2].position.clone());
-        linePoints.push(WallframePoints[0].position.clone());
-        linePoints.push(WallframePoints[3].position.clone());
-        linePoints.push(WallframePoints[1].position.clone());
-        linePoints.push(WallframePoints[2].position.clone());
+        linePoints.push(points[2].position.clone());
+        linePoints.push(points[0].position.clone());
+        linePoints.push(points[3].position.clone());
+        linePoints.push(points[1].position.clone());
+        linePoints.push(points[2].position.clone());
 
-        const material = new THREE.LineBasicMaterial({color: 0xff0000});
+        const material = new THREE.LineBasicMaterial({color: lineColor});
         const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
         const line = new THREE.Line(geometry,material);
         this.scene.add(line);
-        WallframeLines.push(line);
-        WallframePlanes.push(linePoints);
-        this.ResetWallframePoints();
+        lines.push(line);
+        planes.push(linePoints);
     }
 
     DrawDoors()
     {
-        this.scene.remove(previewLine);
-        previewLine = null;
-        var linePoints = [];
-        linePoints.push(DoorPoints[2].position.clone());
-        linePoints.push(DoorPoints[0].position.clone());
-        linePoints.push(DoorPoints[3].position.clone());
-        linePoints.push(DoorPoints[1].position.clone());
-        linePoints.push(DoorPoints[2].position.clone());
-
-        const material = new THREE.LineBasicMaterial({color: 0x00FF00});
-        const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
-        const line = new THREE.Line(geometry,material);
-        this.scene.add(line);
-        DoorLines.push(line);
-        DoorPlanes.push(linePoints);
+        this.DrawPlanes(DoorPoints,DoorLines,DoorPlanes,0x00ff00);
         this.ResetDoorPoints();
-    }
-
-    DrawPlanes()
-    {
-        for(let i = 0; i < WallPlanePoints.length; ++i)
-        {
-            var Points = WallPlanePoints[i];
-            var linePoints = [];
-            for(let j = 0; j < Points.length; ++j)
-            {
-                let point = new THREE.Vector3(0,0,0);
-                point.copy(Points[j]);
-                linePoints.push(point);
-            }
-            let closePoint = new THREE.Vector3(0,0,0);
-            closePoint.copy(Points[0]);
-            linePoints.push(closePoint);
-            const material = new THREE.LineBasicMaterial({color: 0x0000ff});
-            const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
-            const line = new THREE.Line(geometry,material);
-            this.scene.add(line);
-            WallLines.push(line);
-        }
     }
 
     LoadModel(position, scene)
     {
         let inPlane = this.IsInPlane(this.reticle.position);
-
-        new THREE.RGBELoader()
-            .setDataType(THREE.UnsignedByteType)
-            .setPath('Textures/')
-            .load('lebombo_1k.hdr', function (texture) {
-                defaultEnv = pmremGenerator.fromEquirectangular(texture).texture;
-                texture.dispose();
-                pmremGenerator.dispose();
-                window.gltfLoader.setPath('3D/');
                 switch (decoType)
                 {
                     case DecorationTypes.Decoration:
@@ -1564,7 +1524,6 @@ class App {
                         app.GenerateDoorTrims(ModelID);
                         break;
                 }
-            });
     }
 
     PlaceSet()
@@ -2266,7 +2225,6 @@ class App {
 
     }
 
-    //Ensure to change Z to Y when testing vertical planes
     FillPlane(ID)
     {
         for (let currentPlane = 0; currentPlane < WallPlanePoints.length; ++currentPlane)
@@ -2535,7 +2493,6 @@ class App {
 
     }
 
-    //Ensure to change Z to Y when testing vertical planes
     GenerateWallTrims(ID)
     {
         //this.ResetWallTrims();
@@ -2592,7 +2549,6 @@ class App {
         })
     }
 
-    //Ensure to change Z to Y when testing vertical planes
     IsInPlane(position)
     {
         var inside = false;
