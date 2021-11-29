@@ -131,8 +131,11 @@ let paramsTrimColor = {trimColor: "#919197" };
 let paramsDecorationColor = {decorationColor: "#919197" };
 let paramsFillPlanes = {fillPlanes: false};
 let paramsVisibility = {showGuides: true};
+let estimatedWallMeters = {wallMeters: 0};
+let estimatedFrameMeters = {frameMeters: 0};
 let trimColor;
 let decorationColor;
+
 
 //Transform GUI parameters
 let paramsWallTrimHeight = {height: 0.5};
@@ -963,6 +966,16 @@ class App {
             this.HandleDoorSelection(event);
     }
 
+    CalculateWallMeters()
+    {
+        for (let currPlane = 0; currPlane < WallPlanePoints.length; ++currPlane)
+        {
+            let currPoints = WallPlanePoints[currPlane];
+            let distance = currPoints[1].distanceTo(currPoints[2]);
+            estimatedWallMeters.wallMeters += Math.abs(distance);
+        }
+    }
+
     HandleWallSelection(event)
     {
         if (PlacingPointsWalls)
@@ -977,6 +990,7 @@ class App {
                         this.scene.remove(previewLine);
                         previewLine = null;
                         this.CreatePlanes();
+                        this.CalculateWallMeters();
                         this.CreateDoneButton();
                         this.CreateSelectWallframesButton();
                         this.CreateSelectDoorsButton();
@@ -1025,6 +1039,7 @@ class App {
                             }
 
                             this.CreatePlanes();
+                            this.CalculateWallMeters();
                         })
                             this.CreateDoneButton();
                             this.CreateSelectWallframesButton();
@@ -1424,7 +1439,18 @@ class App {
     DrawWallframes()
     {
         this.DrawPlanes(WallframePoints,WallframeLines,WallframePlanes,0xff0000);
+        this.CalculateFrameMeters(WallframePoints);
         this.ResetWallframePoints();
+    }
+
+    CalculateFrameMeters(points)
+    {
+        //calculate distance between points 0 and 2 (x2)
+        let Ydistance = points[0].position.distanceTo(points[2].position);
+        //calculate distance between points 0 and 3 (x2)
+        let Rdistance = points[0].position.distanceTo(points[3].position);
+
+        estimatedFrameMeters.frameMeters += (Ydistance * 2) + (Rdistance * 2) ;
     }
 
     //This function takes 3 containers, points is the only one that needs to filled before calling function
@@ -1451,6 +1477,7 @@ class App {
     DrawDoors()
     {
         this.DrawPlanes(DoorPoints,DoorLines,DoorPlanes,0x00ff00);
+        this.CalculateFrameMeters(DoorPoints);
         this.ResetDoorPoints();
     }
 
@@ -3083,6 +3110,8 @@ class App {
         defaultGui.addColor(paramsWallColor, 'wallColor').onChange(this.UpdateWallColor);
         defaultGui.add(paramsFillPlanes,'fillPlanes').onChange(this.UpdatePlaneFill);
         defaultGui.add(paramsVisibility, 'showGuides').onChange(this.UpdateGuideVisibility);
+        defaultGui.add(estimatedWallMeters, 'wallMeters');
+        defaultGui.add(estimatedFrameMeters, 'frameMeters');
 
         transformGui.add(paramsWallTrimHeight,'height',ConstrainedYPosWalls - WallHeight,ConstrainedYPosWalls).onChange(this.MoveWallTrimsHeight);
     }
