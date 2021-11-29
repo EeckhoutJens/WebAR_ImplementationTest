@@ -1127,7 +1127,7 @@ class App {
                     ConstrainedYPosWalls = WallPoints[1].position.y;
 
                     //DELETE - Just added it now for testing purposes
-                    ConstrainedYPosWalls = 1.75;
+                    //ConstrainedYPosWalls = 1.75;
 
                     WallHeight = ConstrainedYPosWalls - WallPoints[0].position.y;
                     this.ResetWallPoints();
@@ -1169,7 +1169,7 @@ class App {
 
         if (container.length === 2) {
             //Generate top left
-            container[1].position.y = 0.5;
+            //container[1].position.y = 0.5;
             let topLeftPosition = container[0].position.clone();
             topLeftPosition.y = container[1].position.y;
             let topLeftSphere = this.CreateSphere(topLeftPosition);
