@@ -1183,16 +1183,6 @@ class App {
             createdSphere = this.CreateSphere(TopPoint);
         }
 
-        let frame = event.frame;
-
-        let anchorPose = new XRRigidTransform(createdSphere.position,{x: 0,y: 0,z: 0,w: 1});
-
-        frame.createAnchor(anchorPose,this.localReferenceSpace).then((anchor) =>
-        {
-            anchor.context = {};
-            anchor.context.sceneObject = createdSphere;
-            createdSphere.anchor = anchor;
-        })
 
         container.push(createdSphere);
 
@@ -1204,25 +1194,11 @@ class App {
             let topLeftSphere = this.CreateSphere(topLeftPosition);
             container.push(topLeftSphere);
 
-            let anchorPoseTL = new XRRigidTransform(topLeftPosition, {x: 0, y: 0, z: 0, w: 1})
-            frame.createAnchor(anchorPoseTL, this.localReferenceSpace).then((anchor) => {
-                anchor.context = {};
-                anchor.context.sceneObject = topLeftSphere;
-                topLeftSphere.anchor = anchor;
-            })
-
             //Generate bottom right
             let bottomRightPosition = container[1].position.clone();
             bottomRightPosition.y = container[0].position.y;
             let bottomRightSphere = this.CreateSphere(bottomRightPosition);
             container.push(bottomRightSphere);
-
-            let anchorPoseBR = new XRRigidTransform(bottomRightPosition, {x: 0, y: 0, z: 0, w: 1})
-            frame.createAnchor(anchorPoseBR, this.localReferenceSpace).then((anchor) => {
-                anchor.context = {};
-                anchor.context.sceneObject = bottomRightSphere;
-                bottomRightSphere.anchor = anchor;
-            })
         }
     }
 
@@ -1382,7 +1358,7 @@ class App {
 
     CreateSphere(position)
     {
-        const sphereGeometry = new THREE.SphereGeometry(0.05,32,16);
+        const sphereGeometry = new THREE.SphereGeometry(0.025,32,16);
         const sphereMaterial = new THREE.MeshBasicMaterial({color: 0xfff00});
         const sphere = new THREE.Mesh(sphereGeometry,sphereMaterial);
         if (position)
@@ -1457,14 +1433,17 @@ class App {
         this.ResetWallframePoints();
     }
 
-    CalculateFrameMeters(points)
+    CalculateFrameMeters(points, isDoor)
     {
         //calculate distance between points 0 and 2 (x2)
         let Ydistance = points[0].position.distanceTo(points[2].position);
         //calculate distance between points 0 and 3 (x2)
         let Rdistance = points[0].position.distanceTo(points[3].position);
 
-        estimatedFrameMeters.frameMeters += (Ydistance * 2) + (Rdistance * 2) ;
+        if (!isDoor)
+            estimatedFrameMeters.frameMeters += (Ydistance * 2) + (Rdistance * 2) ;
+        else
+            estimatedFrameMeters.frameMeters += (Ydistance * 2) + Rdistance;
     }
 
     //This function takes 3 containers, points is the only one that needs to filled before calling function
@@ -1480,11 +1459,29 @@ class App {
         linePoints.push(points[1].position.clone());
         linePoints.push(points[2].position.clone());
 
+        let anchorPose = new XRRigidTransform(linePoints[0].position,{x: 0,y: 0,z: 0,w: 1});
+
+        frame.createAnchor(anchorPose,this.localReferenceSpace).then((anchor) =>
+        {
+            anchor.context = {};
+            anchor.context.sceneObject = [];
+            anchor.context.sceneObject.push(linePoints[0]);
+            anchor.context.sceneObject.push(linePoints[1]);
+            anchor.context.sceneObject.push(linePoints[2]);
+            anchor.context.sceneObject.push(linePoints[3]);
+
+            linePoints[0].anchor = anchor;
+            linePoints[1].anchor = anchor;
+            linePoints[2].anchor = anchor;
+            linePoints[3].anchor = anchor;
+        })
+
         const material = new THREE.LineBasicMaterial({color: lineColor});
         const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
         const line = new THREE.Line(geometry,material);
         this.scene.add(line);
         lines.push(line);
+        linePoints.pop();
         planes.push(linePoints);
     }
 
