@@ -1169,7 +1169,7 @@ class App {
         }
     }
 
-    HandleFrameSelection(container)
+    HandleFrameSelection(event, container)
     {
         //Select bottom left - top right
         let createdSphere;
@@ -1183,6 +1183,16 @@ class App {
             createdSphere = this.CreateSphere(TopPoint);
         }
 
+        let frame = event.frame;
+
+        let anchorPose = new XRRigidTransform(createdSphere.position,{x: 0,y: 0,z: 0,w: 1});
+
+        frame.createAnchor(anchorPose,this.localReferenceSpace).then((anchor) =>
+        {
+            anchor.context = {};
+            anchor.context.sceneObject = createdSphere;
+            createdSphere.anchor = anchor;
+        })
 
         container.push(createdSphere);
 
@@ -1194,24 +1204,38 @@ class App {
             let topLeftSphere = this.CreateSphere(topLeftPosition);
             container.push(topLeftSphere);
 
+            let anchorPoseTL = new XRRigidTransform(topLeftPosition, {x: 0, y: 0, z: 0, w: 1})
+            frame.createAnchor(anchorPoseTL, this.localReferenceSpace).then((anchor) => {
+                anchor.context = {};
+                anchor.context.sceneObject = topLeftSphere;
+                topLeftSphere.anchor = anchor;
+            })
+
             //Generate bottom right
             let bottomRightPosition = container[1].position.clone();
             bottomRightPosition.y = container[0].position.y;
             let bottomRightSphere = this.CreateSphere(bottomRightPosition);
             container.push(bottomRightSphere);
+
+            let anchorPoseBR = new XRRigidTransform(bottomRightPosition, {x: 0, y: 0, z: 0, w: 1})
+            frame.createAnchor(anchorPoseBR, this.localReferenceSpace).then((anchor) => {
+                anchor.context = {};
+                anchor.context.sceneObject = bottomRightSphere;
+                bottomRightSphere.anchor = anchor;
+            })
         }
     }
 
     HandleWallframeSelection(event)
     {
-        this.HandleFrameSelection(WallframePoints);
-        this.DrawWallframes(event);
+        this.HandleFrameSelection(event,WallframePoints);
+        this.DrawWallframes();
     }
 
     HandleDoorSelection(event)
     {
-        this.HandleFrameSelection(DoorPoints);
-        this.DrawDoors(event);
+        this.HandleFrameSelection(event,DoorPoints);
+        this.DrawDoors();
     }
 
     ResetWallPoints()
@@ -1426,9 +1450,9 @@ class App {
 
     }
 
-    DrawWallframes(event)
+    DrawWallframes()
     {
-        this.DrawPlanes(WallframePoints,WallframeLines,WallframePlanes,0xff0000, event.frame);
+        this.DrawPlanes(WallframePoints,WallframeLines,WallframePlanes,0xff0000);
         this.CalculateFrameMeters(WallframePoints);
         this.ResetWallframePoints();
     }
@@ -1448,7 +1472,7 @@ class App {
 
     //This function takes 3 containers, points is the only one that needs to filled before calling function
     //The other 2 will be used to store information created within this function
-    DrawPlanes(points, lines, planes, lineColor, frame)
+    DrawPlanes(points, lines, planes, lineColor)
     {
         this.scene.remove(previewLine);
         previewLine = null;
@@ -1459,23 +1483,6 @@ class App {
         linePoints.push(points[1].position.clone());
         linePoints.push(points[2].position.clone());
 
-        let anchorPose = new XRRigidTransform(linePoints[0].position,{x: 0,y: 0,z: 0,w: 1});
-
-        frame.createAnchor(anchorPose,this.localReferenceSpace).then((anchor) =>
-        {
-            anchor.context = {};
-            anchor.context.sceneObject = [];
-            anchor.context.sceneObject.push(linePoints[0]);
-            anchor.context.sceneObject.push(linePoints[1]);
-            anchor.context.sceneObject.push(linePoints[2]);
-            anchor.context.sceneObject.push(linePoints[3]);
-
-            linePoints[0].anchor = anchor;
-            linePoints[1].anchor = anchor;
-            linePoints[2].anchor = anchor;
-            linePoints[3].anchor = anchor;
-        })
-
         const material = new THREE.LineBasicMaterial({color: lineColor});
         const geometry = new THREE.BufferGeometry().setFromPoints(linePoints);
         const line = new THREE.Line(geometry,material);
@@ -1485,9 +1492,9 @@ class App {
         planes.push(linePoints);
     }
 
-    DrawDoors(event)
+    DrawDoors()
     {
-        this.DrawPlanes(DoorPoints,DoorLines,DoorPlanes,0x00ff00,event.frame);
+        this.DrawPlanes(DoorPoints,DoorLines,DoorPlanes,0x00ff00);
         this.CalculateFrameMeters(DoorPoints);
         this.ResetDoorPoints();
     }
