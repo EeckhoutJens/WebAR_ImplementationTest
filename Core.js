@@ -553,35 +553,40 @@ class App {
         // Update the position of all the anchored objects based on the currently reported positions of their anchors
         const tracked_anchors = frame.trackedAnchors;
         if(tracked_anchors){
-            all_previous_anchors.forEach(anchor => {
+            /**all_previous_anchors.forEach(anchor => {
                 if(!tracked_anchors.has(anchor))
                 {
                     this.scene.remove(anchor.context.sceneObject);
                 }
-            });
+            });*/
 
             tracked_anchors.forEach(anchor => {
                 const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
                 if (anchorPose)
                 {
-                    anchor.context.sceneObject.matrix.fromArray(anchorPose.transform.matrix);
+                    for (let currObj = 0; currObj < anchor.context.sceneObject.length; ++currObj)
+                    {
+                        anchor.context.sceneObject[currObj].matrix.fromArray(anchorPose.transform.matrix);
+                    }
                 }
                 else
                 {
-
-                    anchor.context.sceneObject.visible = false;
+                    for (let currObj = 0; currObj < anchor.context.sceneObject.length; ++currObj)
+                    {
+                        anchor.context.sceneObject[currObj].visible = false;
+                    }
                 }
             });
 
             all_previous_anchors = tracked_anchors;
         }
         else {
-            all_previous_anchors.forEach(anchor =>
+            /**all_previous_anchors.forEach(anchor =>
             {
 
                 this.scene.remove(anchor.context.sceneObject);
 
-            });
+            });*/
 
             all_previous_anchors = new Set();
         }
@@ -1016,28 +1021,32 @@ class App {
 
                         let anchorPoseP1 = new XRRigidTransform(Point1.position,{x: 0,y: 0,z: 0,w: 1});
                         let anchorPoseP2 = new XRRigidTransform(Point2.position,{x: 0,y: 0,z: 0,w: 1});
-                        frame.createAnchor(anchorPoseP1,this.localReferenceSpace).then((anchor) =>
+
+                        /**frame.createAnchor(anchorPoseP1,this.localReferenceSpace).then((anchor) =>
                         {
                             anchor.context = {};
                             anchor.context.sceneObject = Point1;
                             Point1.anchor = anchor;
 
                             WallPoints.push(Point1);
-                        })
+                        })*/
 
                         frame.createAnchor(anchorPoseP2,this.localReferenceSpace).then((anchor) =>
                         {
                             anchor.context = {};
-                            anchor.context.sceneObject = Point2;
+                            anchor.context.sceneObject = [];
+                            anchor.context.sceneObject.push(Point2);
+                            anchor.context.sceneObject.push(Point1);
                             Point2.anchor = anchor;
+                            Point1.anchor = anchor;
 
+                            WallPoints.push(Point1);
                             WallPoints.push(Point2);
 
                             if (WallPoints.length >= 4)
                             {
                                 ++NrOfWalls;
                             }
-
                             this.CreatePlanes();
                             this.CalculateWallMeters();
                         })
@@ -1090,7 +1099,7 @@ class App {
             let frame = event.frame;
             let inputSource = event.inputSource;
 
-            let anchorPoseP1 = new XRRigidTransform(Point1.position,{x: 0,y: 0,z: 0,w: 1});
+            /**let anchorPoseP1 = new XRRigidTransform(Point1.position,{x: 0,y: 0,z: 0,w: 1});
             let anchorPoseP2 = new XRRigidTransform(Point2.position,{x: 0,y: 0,z: 0,w: 1});
             frame.createAnchor(anchorPoseP1,this.localReferenceSpace).then((anchor) =>
             {
@@ -1099,14 +1108,18 @@ class App {
                 Point1.anchor = anchor;
 
                 WallPoints.push(Point1);
-            })
+            })*/
 
             frame.createAnchor(anchorPoseP2,this.localReferenceSpace).then((anchor) =>
             {
                 anchor.context = {};
-                anchor.context.sceneObject = Point2;
+                anchor.context.sceneObject = [];
+                anchor.context.sceneObject.push(Point2);
+                anchor.context.sceneObject.push(Point1);
                 Point2.anchor = anchor;
+                Point1.anchor = anchor;
 
+                WallPoints.push(Point1);
                 WallPoints.push(Point2);
 
                 if (WallPoints.length >= 4)
