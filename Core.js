@@ -1146,7 +1146,8 @@ class App {
             {
                 anchor.context = {};
                 createdSphere.anchor = anchor;
-                anchor.context.sceneObject = createdSphere;
+                anchor.context.sceneObject = [];
+                anchor.context.sceneObject.push(createdSphere);
                 app.scene.add(createdSphere);
                 WallPoints.push(createdSphere);
 
