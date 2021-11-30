@@ -1453,7 +1453,7 @@ class App {
     DrawWallframes()
     {
         this.DrawPlanes(WallframePoints,WallframeLines,WallframePlanes,0xff0000);
-        this.CalculateFrameMeters(WallframePoints);
+        this.CalculateFrameMeters(WallframePoints, false);
         this.ResetWallframePoints();
     }
 
@@ -1495,7 +1495,7 @@ class App {
     DrawDoors()
     {
         this.DrawPlanes(DoorPoints,DoorLines,DoorPlanes,0x00ff00);
-        this.CalculateFrameMeters(DoorPoints);
+        this.CalculateFrameMeters(DoorPoints, true);
         this.ResetDoorPoints();
     }
 
