@@ -1169,7 +1169,7 @@ class App {
         }
     }
 
-    HandleFrameSelection(event, container)
+    HandleFrameSelection(container)
     {
         //Select bottom left - top right
         let createdSphere;
@@ -1204,14 +1204,14 @@ class App {
 
     HandleWallframeSelection(event)
     {
-        this.HandleFrameSelection(event,WallframePoints);
-        this.DrawWallframes();
+        this.HandleFrameSelection(WallframePoints);
+        this.DrawWallframes(event);
     }
 
     HandleDoorSelection(event)
     {
-        this.HandleFrameSelection(event,DoorPoints);
-        this.DrawDoors();
+        this.HandleFrameSelection(DoorPoints);
+        this.DrawDoors(event);
     }
 
     ResetWallPoints()
@@ -1426,9 +1426,9 @@ class App {
 
     }
 
-    DrawWallframes()
+    DrawWallframes(event)
     {
-        this.DrawPlanes(WallframePoints,WallframeLines,WallframePlanes,0xff0000);
+        this.DrawPlanes(WallframePoints,WallframeLines,WallframePlanes,0xff0000, event.frame);
         this.CalculateFrameMeters(WallframePoints);
         this.ResetWallframePoints();
     }
@@ -1448,7 +1448,7 @@ class App {
 
     //This function takes 3 containers, points is the only one that needs to filled before calling function
     //The other 2 will be used to store information created within this function
-    DrawPlanes(points, lines, planes, lineColor)
+    DrawPlanes(points, lines, planes, lineColor, frame)
     {
         this.scene.remove(previewLine);
         previewLine = null;
@@ -1485,9 +1485,9 @@ class App {
         planes.push(linePoints);
     }
 
-    DrawDoors()
+    DrawDoors(event)
     {
-        this.DrawPlanes(DoorPoints,DoorLines,DoorPlanes,0x00ff00);
+        this.DrawPlanes(DoorPoints,DoorLines,DoorPlanes,0x00ff00,event.frame);
         this.CalculateFrameMeters(DoorPoints);
         this.ResetDoorPoints();
     }
