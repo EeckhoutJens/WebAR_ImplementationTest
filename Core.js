@@ -659,7 +659,7 @@ class App {
             InitialPos.copy(this.reticle.position);
 
             //CODE TO TEST ON FLAT PLAINS - REMOVE FOR PROPER TESTING
-            InitialPos.y = 0.5;
+            //InitialPos.y = 0.5;
 
             LTPoint.copy(WallframePoints[0].position);
             LTPoint.y = InitialPos.y;
@@ -705,7 +705,7 @@ class App {
             InitialPos.copy(this.reticle.position);
 
             //CODE TO TEST ON FLAT PLAINS - REMOVE FOR PROPER TESTING
-            InitialPos.y = 0.5;
+            //InitialPos.y = 0.5;
 
             LTPoint.copy(DoorPoints[0].position);
             LTPoint.y = InitialPos.y;
