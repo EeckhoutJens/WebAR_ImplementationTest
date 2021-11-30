@@ -1099,9 +1099,9 @@ class App {
             let frame = event.frame;
             let inputSource = event.inputSource;
 
-            /**let anchorPoseP1 = new XRRigidTransform(Point1.position,{x: 0,y: 0,z: 0,w: 1});
+            let anchorPoseP1 = new XRRigidTransform(Point1.position,{x: 0,y: 0,z: 0,w: 1});
             let anchorPoseP2 = new XRRigidTransform(Point2.position,{x: 0,y: 0,z: 0,w: 1});
-            frame.createAnchor(anchorPoseP1,this.localReferenceSpace).then((anchor) =>
+            /**frame.createAnchor(anchorPoseP1,this.localReferenceSpace).then((anchor) =>
             {
                 anchor.context = {};
                 anchor.context.sceneObject = Point1;
