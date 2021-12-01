@@ -2647,7 +2647,7 @@ class App {
                     &&position.y <= highest.y  && position.y >= lowest.y)
                 {
                     let distanceToMarker = Math.abs(currentPoints[0].z - position.z);
-                    if (distanceToMarker < 0.1)
+                    if (distanceToMarker < 0.25)
                     {
                         inside = true;
                         HitPlaneDirection = direction;
@@ -2660,7 +2660,7 @@ class App {
                     && position.y <= highest.y && position.y >= lowest.y)
                 {
                     let distanceToMarker = Math.abs(currentPoints[0].x - position.x);
-                    if (distanceToMarker < 0.1)
+                    if (distanceToMarker < 0.25)
                     {
                         inside = true;
                         HitPlaneDirection = direction;
@@ -2913,11 +2913,11 @@ class App {
 
     SelectClicked()
     {
-        /**if (WidthController)
+        if (WidthController)
         {
             transformGui.remove(WidthController);
             WidthController = null;
-        }*/
+        }
         if (DecoToMove)
         {
             DecoToMove = null;
@@ -2962,13 +2962,14 @@ class App {
                         FrameToMove = currentFrame;
                         FtMClippingPlanes = UsedClippingPlanesWallFrames[i];
                         SelectedClippedFrameTrims = ClippedFrameTrims[i];
-                        this.RecolorSelectedFrame();
                         selectedFrame = true;
                         for (let currPlane = 0; currPlane < WallPlanePoints.length; ++currPlane)
                         {
                             let currentPlanePoints = WallPlanePoints[currPlane];
                             if (this.IsInSpecificPlane(FrameToMove.children[0].position,currentPlanePoints))
                             {
+                                this.RecolorSelectedFrame();
+
                                 //Force recalculation of IsDirection to prevent bugs
                                 let direction = this.CalculatePlaneDirection(FrameToMove.children[0].position,FrameToMove.children[3].position)
                                 let absDirection = new THREE.Vector3(Math.abs(direction.x),Math.abs(direction.y),Math.abs(direction.z))
