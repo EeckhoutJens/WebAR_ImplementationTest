@@ -2949,7 +2949,7 @@ class App {
         }
 
         //Check wallframes
-        if (ConnectedWallframes)
+        if (ConnectedWallframes.length > 0)
         {
             let currentShortestDistance = 0.5;
             for (let i = 0; i < ConnectedWallframes.length; ++i)
@@ -2958,7 +2958,7 @@ class App {
 
                 for (let j = 0; j < currentFrame.children.length; ++j)
                 {
-                    let distanceToMarker = currentFrame.children[j].position.distanceToSquared(this.reticle.position);
+                    let distanceToMarker = currentFrame.children[j].position.distanceTo(this.reticle.position);
                     if (distanceToMarker < 0.5)
                     {
                         if (distanceToMarker < currentShortestDistance)
@@ -2971,7 +2971,6 @@ class App {
                         }
                     }
                 }
-
             }
 
             for (let currPlane = 0; currPlane < WallPlanePoints.length; ++currPlane)
@@ -2999,14 +2998,17 @@ class App {
         {
             if (SpawnedDecorations)
             {
+                let currentShortestDistance = 0.15;
                 for (let currDeco = 0; currDeco < SpawnedDecorations.length; ++currDeco)
                 {
                     let distanceToMarker = SpawnedDecorations[currDeco].position.distanceToSquared(this.reticle.position);
                     if (distanceToMarker < 0.15)
                     {
-                        DecoToMove = SpawnedDecorations[currDeco];
-                        IsMovingDeco = true;
-                        return;
+                        if (distanceToMarker < currentShortestDistance)
+                        {
+                            DecoToMove = SpawnedDecorations[currDeco];
+                            IsMovingDeco = true;
+                        }
                     }
                 }
             }
