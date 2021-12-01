@@ -2913,11 +2913,11 @@ class App {
 
     SelectClicked()
     {
-        if (WidthController)
+        /**if (WidthController)
         {
             transformGui.remove(WidthController);
             WidthController = null;
-        }
+        }*/
         if (DecoToMove)
         {
             DecoToMove = null;
