@@ -2951,15 +2951,18 @@ class App {
         //Check wallframes
         if (ConnectedWallframes)
         {
+            let currentShortestDistance = 0.5;
             for (let i = 0; i < ConnectedWallframes.length; ++i)
             {
                 let currentFrame = ConnectedWallframes[i]
-                let currentShortestDistance = 0.5;
+
                 for (let j = 0; j < currentFrame.children.length; ++j)
                 {
                     let distanceToMarker = currentFrame.children[j].position.distanceToSquared(this.reticle.position);
-                    if (distanceToMarker < 0.5) {
-                        if (distanceToMarker < currentShortestDistance) {
+                    if (distanceToMarker < 0.5)
+                    {
+                        if (distanceToMarker < currentShortestDistance)
+                        {
                             currentShortestDistance = distanceToMarker;
                             FrameToMove = currentFrame;
                             FtMClippingPlanes = UsedClippingPlanesWallFrames[i];
@@ -2969,27 +2972,25 @@ class App {
                     }
                 }
 
-                        
-                        for (let currPlane = 0; currPlane < WallPlanePoints.length; ++currPlane)
-                        {
-                            let currentPlanePoints = WallPlanePoints[currPlane];
-                            if (this.IsInSpecificPlane(FrameToMove.children[0].position,currentPlanePoints))
-                            {
-                                this.RecolorSelectedFrame();
+            }
 
-                                //Force recalculation of IsDirection to prevent bugs
-                                let direction = this.CalculatePlaneDirection(FrameToMove.children[0].position,FrameToMove.children[3].position)
-                                let absDirection = new THREE.Vector3(Math.abs(direction.x),Math.abs(direction.y),Math.abs(direction.z))
-                                IsMoveDirectionX = absDirection.x > absDirection.z;
-                                if (IsMoveDirectionX)
-                                    WidthController = transformGui.add(paramsWallFrameWidth,'width',currentPlanePoints[0].x, currentPlanePoints[3].x).onChange(this.MoveWallFrameWidth);
-                                else
-                                    WidthController = transformGui.add(paramsWallFrameWidth,'width',currentPlanePoints[0].z, -currentPlanePoints[3].z).onChange(this.MoveWallFrameWidth);
-                                return;
-                            }
+            for (let currPlane = 0; currPlane < WallPlanePoints.length; ++currPlane)
+            {
+                let currentPlanePoints = WallPlanePoints[currPlane];
+                if (this.IsInSpecificPlane(FrameToMove.children[0].position,currentPlanePoints))
+                {
+                    this.RecolorSelectedFrame();
 
-                        }
-                        return;
+                    //Force recalculation of IsDirection to prevent bugs
+                    let direction = this.CalculatePlaneDirection(FrameToMove.children[0].position,FrameToMove.children[3].position)
+                    let absDirection = new THREE.Vector3(Math.abs(direction.x),Math.abs(direction.y),Math.abs(direction.z))
+                    IsMoveDirectionX = absDirection.x > absDirection.z;
+                    if (IsMoveDirectionX)
+                        WidthController = transformGui.add(paramsWallFrameWidth,'width',currentPlanePoints[0].x, currentPlanePoints[3].x).onChange(this.MoveWallFrameWidth);
+                    else
+                        WidthController = transformGui.add(paramsWallFrameWidth,'width',currentPlanePoints[0].z, -currentPlanePoints[3].z).onChange(this.MoveWallFrameWidth);
+                    return;
+                }
 
             }
         }
