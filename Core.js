@@ -2954,15 +2954,22 @@ class App {
             for (let i = 0; i < ConnectedWallframes.length; ++i)
             {
                 let currentFrame = ConnectedWallframes[i]
+                let currentShortestDistance = 0.5;
                 for (let j = 0; j < currentFrame.children.length; ++j)
                 {
                     let distanceToMarker = currentFrame.children[j].position.distanceToSquared(this.reticle.position);
-                    if (distanceToMarker < 0.5)
-                    {
-                        FrameToMove = currentFrame;
-                        FtMClippingPlanes = UsedClippingPlanesWallFrames[i];
-                        SelectedClippedFrameTrims = ClippedFrameTrims[i];
-                        selectedFrame = true;
+                    if (distanceToMarker < 0.5) {
+                        if (distanceToMarker < currentShortestDistance) {
+                            currentShortestDistance = distanceToMarker;
+                            FrameToMove = currentFrame;
+                            FtMClippingPlanes = UsedClippingPlanesWallFrames[i];
+                            SelectedClippedFrameTrims = ClippedFrameTrims[i];
+                            selectedFrame = true;
+                        }
+                    }
+                }
+
+                        
                         for (let currPlane = 0; currPlane < WallPlanePoints.length; ++currPlane)
                         {
                             let currentPlanePoints = WallPlanePoints[currPlane];
@@ -2983,8 +2990,7 @@ class App {
 
                         }
                         return;
-                    }
-                }
+
             }
         }
 
