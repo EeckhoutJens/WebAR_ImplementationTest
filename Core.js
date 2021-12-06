@@ -420,12 +420,6 @@ class App {
         /** Perform hit testing using the viewer as origin. */
         this.hitTestSource = await this.xrSession.requestHitTestSource({ space: this.viewerSpace });
 
-        //Initialize stats panel
-        /**stats.showPanel(0);
-        stats.dom.style.left = "25px";
-        stats.dom.style.top = "700px";
-        document.body.appendChild(stats.dom);*/
-
         /** Start a rendering loop using this.onXRFrame. */
         this.xrSession.requestAnimationFrame(this.onXRFrame);
 
@@ -553,13 +547,6 @@ class App {
         // Update the position of all the anchored objects based on the currently reported positions of their anchors
         const tracked_anchors = frame.trackedAnchors;
         if(tracked_anchors){
-            /**all_previous_anchors.forEach(anchor => {
-                if(!tracked_anchors.has(anchor))
-                {
-                    this.scene.remove(anchor.context.sceneObject);
-                }
-            });*/
-
             tracked_anchors.forEach(anchor => {
                 const anchorPose = frame.getPose(anchor.anchorSpace, this.localReferenceSpace);
                 if (anchorPose)
@@ -581,12 +568,7 @@ class App {
             all_previous_anchors = tracked_anchors;
         }
         else {
-            /**all_previous_anchors.forEach(anchor =>
-            {
 
-                this.scene.remove(anchor.context.sceneObject);
-
-            });*/
 
             all_previous_anchors = new Set();
         }
@@ -1017,19 +999,7 @@ class App {
 
                         //Code adapted from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
                         let frame = event.frame;
-                        let inputSource = event.inputSource;
-
-                        let anchorPoseP1 = new XRRigidTransform(Point1.position,{x: 0,y: 0,z: 0,w: 1});
                         let anchorPoseP2 = new XRRigidTransform(Point2.position,{x: 0,y: 0,z: 0,w: 1});
-
-                        /**frame.createAnchor(anchorPoseP1,this.localReferenceSpace).then((anchor) =>
-                        {
-                            anchor.context = {};
-                            anchor.context.sceneObject = Point1;
-                            Point1.anchor = anchor;
-
-                            WallPoints.push(Point1);
-                        })*/
 
                         frame.createAnchor(anchorPoseP2,this.localReferenceSpace).then((anchor) =>
                         {
@@ -1097,18 +1067,7 @@ class App {
 
             //Code adapted from anchor example https://github.com/immersive-web/webxr-samples/blob/main/anchors.html
             let frame = event.frame;
-            let inputSource = event.inputSource;
-
-            let anchorPoseP1 = new XRRigidTransform(Point1.position,{x: 0,y: 0,z: 0,w: 1});
             let anchorPoseP2 = new XRRigidTransform(Point2.position,{x: 0,y: 0,z: 0,w: 1});
-            /**frame.createAnchor(anchorPoseP1,this.localReferenceSpace).then((anchor) =>
-            {
-                anchor.context = {};
-                anchor.context.sceneObject = Point1;
-                Point1.anchor = anchor;
-
-                WallPoints.push(Point1);
-            })*/
 
             frame.createAnchor(anchorPoseP2,this.localReferenceSpace).then((anchor) =>
             {
