@@ -3,6 +3,7 @@ Project to visualize certain wall decorations using WebXR
 https://eeckhoutjens.github.io/WebAR_WallDecorating/
 
 Step by step guide:
+
 0) Make sure to keep your device as stable as possible facing towards the wall and gently move it a bit to help it scan the environment
 1) Place a point at the bottom and top of surface to determine the height
 2) Select bottom left of surface to start defining the walls
